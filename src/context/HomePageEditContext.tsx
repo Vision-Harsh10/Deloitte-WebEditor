@@ -19,6 +19,7 @@ interface EditableContent {
     date: string;
     attendees: string;
     imageUrl?: string;
+    link: string;
   }>;
   courseContent: Record<string, {
     title: string;
@@ -26,6 +27,7 @@ interface EditableContent {
     duration: string;
     level: string;
     imageUrl?: string;
+    link: string;
   }>;
   opportunityContent: Record<string, {
     title: string;
@@ -72,20 +74,15 @@ export const useHomePageEdit = () => {
 
 export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initialContent: EditableContent }> = ({ children, initialContent }) => {
   const [editableContent, setEditableContent] = useState<EditableContent>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : initialContent;
-    } catch {
-      return initialContent;
-    }
+    const savedContent = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return savedContent ? JSON.parse(savedContent) : initialContent;
   });
 
   const [imageDimensions, setImageDimensionsState] = useState<Record<string, { width: number; height: number }>>(() => {
-    const saved = localStorage.getItem(IMAGE_DIMENSIONS_KEY);
-    return saved ? JSON.parse(saved) : {};
+    const savedDimensions = localStorage.getItem(IMAGE_DIMENSIONS_KEY);
+    return savedDimensions ? JSON.parse(savedDimensions) : {};
   });
 
-  // Save to localStorage on every change
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(editableContent));
   }, [editableContent]);
@@ -94,27 +91,17 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
     localStorage.setItem(IMAGE_DIMENSIONS_KEY, JSON.stringify(imageDimensions));
   }, [imageDimensions]);
 
-  // Section title
   const setSectionTitle = (key: string, value: string) => {
     setEditableContent(prev => ({
       ...prev,
-      sectionTitles: { ...prev.sectionTitles, [key]: value }
-    }));
-  };
-
-  // Event content
-  const setEventContent = (eventId: string, field: string, value: string) => {
-    setEditableContent(prev => ({
-      ...prev,
-      eventContent: {
-        ...prev.eventContent,
-        [eventId]: { ...prev.eventContent[eventId], [field]: value }
+      sectionTitles: {
+        ...prev.sectionTitles,
+        [key]: value
       }
     }));
   };
 
-  // Event field (for numeric/string fields)
-  const setEventField = (eventId: string, field: keyof Event, value: string | number) => {
+  const setEventContent = (eventId: string, field: string, value: string) => {
     setEditableContent(prev => ({
       ...prev,
       eventContent: {
@@ -127,19 +114,11 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
     }));
   };
 
-  // Course content
-  const setCourseContent = (courseId: string, field: string, value: string) => {
-    setEditableContent(prev => ({
-      ...prev,
-      courseContent: {
-        ...prev.courseContent,
-        [courseId]: { ...prev.courseContent[courseId], [field]: value }
-      }
-    }));
+  const setEventField = (eventId: string, field: keyof Event, value: string | number) => {
+    setEventContent(eventId, field, value.toString());
   };
 
-  // Course field (for numeric/string fields)
-  const setCourseField = (courseId: string, field: keyof Course, value: string | number) => {
+  const setCourseContent = (courseId: string, field: string, value: string) => {
     setEditableContent(prev => ({
       ...prev,
       courseContent: {
@@ -152,19 +131,11 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
     }));
   };
 
-  // Opportunity content
-  const setOpportunityContent = (opportunityId: string, field: string, value: string) => {
-    setEditableContent(prev => ({
-      ...prev,
-      opportunityContent: {
-        ...prev.opportunityContent,
-        [opportunityId]: { ...prev.opportunityContent[opportunityId], [field]: value }
-      }
-    }));
+  const setCourseField = (courseId: string, field: keyof Course, value: string | number) => {
+    setCourseContent(courseId, field, value.toString());
   };
 
-  // Opportunity field (for numeric/string fields)
-  const setOpportunityField = (opportunityId: string, field: keyof Opportunity, value: string | number) => {
+  const setOpportunityContent = (opportunityId: string, field: string, value: string) => {
     setEditableContent(prev => ({
       ...prev,
       opportunityContent: {
@@ -177,19 +148,11 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
     }));
   };
 
-  // Article content
-  const setArticleContent = (articleId: string, field: string, value: string) => {
-    setEditableContent(prev => ({
-      ...prev,
-      articleContent: {
-        ...prev.articleContent,
-        [articleId]: { ...prev.articleContent[articleId], [field]: value }
-      }
-    }));
+  const setOpportunityField = (opportunityId: string, field: keyof Opportunity, value: string | number) => {
+    setOpportunityContent(opportunityId, field, value.toString());
   };
 
-  // Article field (for numeric/string fields)
-  const setArticleField = (articleId: string, field: keyof Article, value: string | number) => {
+  const setArticleContent = (articleId: string, field: string, value: string) => {
     setEditableContent(prev => ({
       ...prev,
       articleContent: {
@@ -202,7 +165,10 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
     }));
   };
 
-  // Mentor image
+  const setArticleField = (articleId: string, field: keyof Article, value: string | number) => {
+    setArticleContent(articleId, field, value.toString());
+  };
+
   const setMentorImage = (mentorId: string, newUrl: string) => {
     setEditableContent(prev => ({
       ...prev,
@@ -213,57 +179,41 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
     }));
   };
 
-  // Event image
   const setEventImage = (eventId: string, newUrl: string) => {
-    setEditableContent(prev => ({
-      ...prev,
-      eventContent: {
-        ...prev.eventContent,
-        [eventId]: {
-          ...prev.eventContent[eventId],
-          imageUrl: newUrl
-        }
-      }
-    }));
+    setEventContent(eventId, 'imageUrl', newUrl);
   };
 
-  // Course image
   const setCourseImage = (courseId: string, newUrl: string) => {
-    setEditableContent(prev => ({
+    setCourseContent(courseId, 'imageUrl', newUrl);
+  };
+
+  const setImageDimensions = (id: string, width: number, height: number) => {
+    setImageDimensionsState(prev => ({
       ...prev,
-      courseContent: {
-        ...prev.courseContent,
-        [courseId]: {
-          ...prev.courseContent[courseId],
-          imageUrl: newUrl
-        }
-      }
+      [id]: { width, height }
     }));
   };
 
-  // Image dimensions
-  const setImageDimensions = (id: string, width: number, height: number) => {
-    setImageDimensionsState(prev => ({ ...prev, [id]: { width, height } }));
+  const value: HomePageEditContextType = {
+    editableContent,
+    setSectionTitle,
+    setEventContent,
+    setEventField,
+    setCourseContent,
+    setCourseField,
+    setOpportunityContent,
+    setOpportunityField,
+    setArticleContent,
+    setArticleField,
+    setMentorImage,
+    setEventImage,
+    setCourseImage,
+    imageDimensions,
+    setImageDimensions
   };
 
   return (
-    <HomePageEditContext.Provider value={{
-      editableContent,
-      setSectionTitle,
-      setEventContent,
-      setEventField,
-      setCourseContent,
-      setCourseField,
-      setOpportunityContent,
-      setOpportunityField,
-      setArticleContent,
-      setArticleField,
-      setMentorImage,
-      setEventImage,
-      setCourseImage,
-      imageDimensions,
-      setImageDimensions,
-    }}>
+    <HomePageEditContext.Provider value={value}>
       {children}
     </HomePageEditContext.Provider>
   );

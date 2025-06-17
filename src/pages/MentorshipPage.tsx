@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import type { Mentor } from '../types';
 import { Users, Star } from 'lucide-react';
 import ResizableImage from '../components/ResizableImage';
+import { useMentorshipPageEdit } from '../context/MentorshipPageEditContext';
 
-const mentors: Mentor[] = [
+export const mentors: Mentor[] = [
   {
     id: '1',
     name: 'Prabhakar Singh',
@@ -40,33 +41,27 @@ interface MentorshipPageProps {
 }
 
 const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
-  const [editableContent, setEditableContent] = useState<Record<string, string>>({});
-  const [imageDimensions, setImageDimensions] = useState<Record<string, { width: number; height: number }>>({});
+  const { mentorList, setMentorImage, setMentorField } = useMentorshipPageEdit();
 
   useEffect(() => {
-    // Load saved content from localStorage
-    const savedContent = localStorage.getItem('mentorshipPageContent');
-    if (savedContent) {
-      setEditableContent(JSON.parse(savedContent));
-    }
+    // Expose setMentorField for EditModeControls
+    (window as any).setMentorFieldForEditPanel = setMentorField;
+    return () => { (window as any).setMentorFieldForEditPanel = undefined; };
+  }, [setMentorField]);
 
-    // Load saved image dimensions from localStorage
-    const savedDimensions = localStorage.getItem('mentorshipPageImageDimensions');
-    if (savedDimensions) {
-      setImageDimensions(JSON.parse(savedDimensions));
-    }
-  }, []);
-
-  const handleContentChange = (id: string, content: string) => {
-    const newContent = { ...editableContent, [id]: content };
-    setEditableContent(newContent);
-    localStorage.setItem('mentorshipPageContent', JSON.stringify(newContent));
+  // Helper to get mentor data from context or initial array
+  const getMentorData = (mentorId: string) => {
+    return mentorList.find(m => m.id === mentorId) || mentors.find(m => m.id === mentorId);
   };
 
-  const handleImageResize = (mentorId: string, width: number, height: number) => {
-    const newDimensions = { ...imageDimensions, [mentorId]: { width, height } };
-    setImageDimensions(newDimensions);
-    localStorage.setItem('mentorshipPageImageDimensions', JSON.stringify(newDimensions));
+  // Helper to update expertise (since it's an array)
+  const handleExpertiseChange = (mentorId: string, index: number, newSkill: string) => {
+    const mentor = getMentorData(mentorId);
+    if (mentor) {
+      const updatedExpertise = [...mentor.expertise];
+      updatedExpertise[index] = newSkill;
+      setMentorField(mentorId, 'expertise', updatedExpertise);
+    }
   };
 
   return (
@@ -79,18 +74,18 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
             contentEditable={isEditMode}
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
-            onBlur={e => handleContentChange('hero-title', e.currentTarget.textContent || 'Connect with Deloitte Experts')}
+            onBlur={e => setMentorField('hero-title', 'name' as keyof Mentor, e.currentTarget.textContent || 'Connect with Deloitte Experts')}
           >
-            {editableContent['hero-title'] || 'Connect with Deloitte Experts'}
+            {getMentorData('hero-title')?.name || 'Connect with Deloitte Experts'}
           </h1>
           <p
             className="text-xl text-[#ffffff] outline-none"
             contentEditable={isEditMode}
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
-            onBlur={e => handleContentChange('hero-description', e.currentTarget.textContent || 'Learn from industry leaders and accelerate your growth')}
+            onBlur={e => setMentorField('hero-description', 'description' as keyof Mentor, e.currentTarget.textContent || 'Learn from industry leaders and accelerate your growth')}
           >
-            {editableContent['hero-description'] || 'Learn from industry leaders and accelerate your growth'}
+            {getMentorData('hero-description')?.description || 'Learn from industry leaders and accelerate your growth'}
           </p>
         </div>
       </div>
@@ -105,9 +100,9 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
               contentEditable={isEditMode}
               suppressContentEditableWarning
               onClick={e => setSelectedElement(e.currentTarget)}
-              onBlur={e => handleContentChange('program-title', e.currentTarget.textContent || 'Mentorship Program')}
+              onBlur={e => setMentorField('program-title', 'name' as keyof Mentor, e.currentTarget.textContent || 'Mentorship Program')}
             >
-              {editableContent['program-title'] || 'Mentorship Program'}
+              {getMentorData('program-title')?.name || 'Mentorship Program'}
             </h2>
           </div>
           <p
@@ -115,9 +110,9 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
             contentEditable={isEditMode}
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
-            onBlur={e => handleContentChange('program-description', e.currentTarget.textContent || 'Connect with Delloite experts who can guide you through your technical journey. Our mentors are industry professionals with extensive experience in various domains of technology.')}
+            onBlur={e => setMentorField('program-description', 'description' as keyof Mentor, e.currentTarget.textContent || 'Connect with Delloite experts who can guide you through your technical journey. Our mentors are industry professionals with extensive experience in various domains of technology.')}
           >
-            {editableContent['program-description'] || 'Connect with Delloite experts who can guide you through your technical journey. Our mentors are industry professionals with extensive experience in various domains of technology.'}
+            {getMentorData('program-description')?.description || 'Connect with Delloite experts who can guide you through your technical journey. Our mentors are industry professionals with extensive experience in various domains of technology.'}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div 
@@ -129,18 +124,18 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('feature-1-title', e.currentTarget.textContent || '1:1 Guidance')}
+                onBlur={e => setMentorField('feature-1-title', 'name' as keyof Mentor, e.currentTarget.textContent || '1:1 Guidance')}
               >
-                {editableContent['feature-1-title'] || '1:1 Guidance'}
+                {getMentorData('feature-1-title')?.name || '1:1 Guidance'}
               </h3>
               <p
                 className="text-sm text-[#000] outline-none"
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('feature-1-description', e.currentTarget.textContent || 'Personalized mentoring sessions with experts')}
+                onBlur={e => setMentorField('feature-1-description', 'description' as keyof Mentor, e.currentTarget.textContent || 'Personalized mentoring sessions with experts')}
               >
-                {editableContent['feature-1-description'] || 'Personalized mentoring sessions with experts'}
+                {getMentorData('feature-1-description')?.description || 'Personalized mentoring sessions with experts'}
               </p>
             </div>
             <div 
@@ -152,18 +147,18 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('feature-2-title', e.currentTarget.textContent || 'Career Support')}
+                onBlur={e => setMentorField('feature-2-title', 'name' as keyof Mentor, e.currentTarget.textContent || 'Career Support')}
               >
-                {editableContent['feature-2-title'] || 'Career Support'}
+                {getMentorData('feature-2-title')?.name || 'Career Support'}
               </h3>
               <p
                 className="text-sm text-[#000] outline-none"
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('feature-2-description', e.currentTarget.textContent || 'Get insights for career growth and development')}
+                onBlur={e => setMentorField('feature-2-description', 'description' as keyof Mentor, e.currentTarget.textContent || 'Get insights for career growth and development')}
               >
-                {editableContent['feature-2-description'] || 'Get insights for career growth and development'}
+                {getMentorData('feature-2-description')?.description || 'Get insights for career growth and development'}
               </p>
             </div>
             <div 
@@ -175,18 +170,18 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('feature-3-title', e.currentTarget.textContent || 'Technical Excellence')}
+                onBlur={e => setMentorField('feature-3-title', 'name' as keyof Mentor, e.currentTarget.textContent || 'Technical Excellence')}
               >
-                {editableContent['feature-3-title'] || 'Technical Excellence'}
+                {getMentorData('feature-3-title')?.name || 'Technical Excellence'}
               </h3>
               <p
                 className="text-sm text-[#000] outline-none"
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('feature-3-description', e.currentTarget.textContent || 'Learn best practices and industry standards')}
+                onBlur={e => setMentorField('feature-3-description', 'description' as keyof Mentor, e.currentTarget.textContent || 'Learn best practices and industry standards')}
               >
-                {editableContent['feature-3-description'] || 'Learn best practices and industry standards'}
+                {getMentorData('feature-3-description')?.description || 'Learn best practices and industry standards'}
               </p>
             </div>
           </div>
@@ -200,13 +195,13 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
             contentEditable={isEditMode}
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
-            onBlur={e => handleContentChange('mentors-title', e.currentTarget.textContent || 'Our Mentors')}
+            onBlur={e => setMentorField('mentors-title', 'name' as keyof Mentor, e.currentTarget.textContent || 'Our Mentors')}
           >
-            {editableContent['mentors-title'] || 'Our Mentors'}
+            {getMentorData('mentors-title')?.name || 'Our Mentors'}
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {mentors.map((mentor) => (
+          {mentorList.map((mentor) => (
             <div key={mentor.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="relative w-full h-48">
                 {/* Blurred Background */}
@@ -223,12 +218,9 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                     src={mentor.imageUrl}
                     alt={mentor.name}
                     isEditMode={isEditMode}
-                    onResize={(width, height) => handleImageResize(mentor.id, width, height)}
+                    onResize={(width, height) => setMentorImage(mentor.id, width.toString())}
                     className="w-44 h-44 rounded-full object-cover"
-                    style={{
-                      width: imageDimensions[mentor.id]?.width || '11rem',
-                      height: imageDimensions[mentor.id]?.height || '11rem'
-                    }}
+                    // Removed inline style for dimensions, will be handled by ResizableImage internally if needed or via global styles
                     showChangeButton={true}
                   />
                 </div>
@@ -239,18 +231,18 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                   contentEditable={isEditMode}
                   suppressContentEditableWarning
                   onClick={e => setSelectedElement(e.currentTarget)}
-                  onBlur={e => handleContentChange(`mentor-${mentor.id}-name`, e.currentTarget.textContent || mentor.name)}
+                  onBlur={e => setMentorField(mentor.id, 'name', e.currentTarget.textContent || mentor.name)}
                 >
-                  {editableContent[`mentor-${mentor.id}-name`] || mentor.name}
+                  {mentor.name}
                 </h3>
                 <p
                   className="text-gray-600 mb-2 outline-none"
                   contentEditable={isEditMode}
                   suppressContentEditableWarning
                   onClick={e => setSelectedElement(e.currentTarget)}
-                  onBlur={e => handleContentChange(`mentor-${mentor.id}-title`, e.currentTarget.textContent || mentor.title)}
+                  onBlur={e => setMentorField(mentor.id, 'title', e.currentTarget.textContent || mentor.title)}
                 >
-                  {editableContent[`mentor-${mentor.id}-title`] || mentor.title}
+                  {mentor.title}
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {mentor.expertise.map((skill, index) => (
@@ -260,9 +252,9 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                       contentEditable={isEditMode}
                       suppressContentEditableWarning
                       onClick={e => setSelectedElement(e.currentTarget)}
-                      onBlur={e => handleContentChange(`mentor-${mentor.id}-expertise-${index}`, e.currentTarget.textContent || skill)}
+                      onBlur={e => handleExpertiseChange(mentor.id, index, e.currentTarget.textContent || skill)}
                     >
-                      {editableContent[`mentor-${mentor.id}-expertise-${index}`] || skill}
+                      {skill}
                     </span>
                   ))}
                 </div>
@@ -271,11 +263,23 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                   contentEditable={isEditMode}
                   suppressContentEditableWarning
                   onClick={e => setSelectedElement(e.currentTarget)}
-                  onBlur={e => handleContentChange(`mentor-${mentor.id}-description`, e.currentTarget.textContent || mentor.description)}
+                  onBlur={e => setMentorField(mentor.id, 'description', e.currentTarget.textContent || mentor.description)}
                 >
-                  {editableContent[`mentor-${mentor.id}-description`] || mentor.description}
+                  {mentor.description}
                 </p>
-                <a href={mentor.link} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={mentor.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-mentor-id={mentor.id}
+                  onClick={e => {
+                    if (isEditMode) {
+                      e.preventDefault(); // Prevent navigation
+                      e.stopPropagation(); // Stop event propagation
+                      setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                    }
+                  }}
+                >
                   <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
                     Connect with Mentor
                   </button>

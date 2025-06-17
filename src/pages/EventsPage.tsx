@@ -58,6 +58,12 @@ const EventsPageInner: React.FC<EventsPageProps> = ({ isEditMode, selectedElemen
     }
   }, [isEditMode, saveToLocalStorage]);
 
+  useEffect(() => {
+    // Expose setEventField for EditModeControls
+    (window as any).setEventFieldForEditPanel = setEventField;
+    return () => { (window as any).setEventFieldForEditPanel = undefined; };
+  }, [setEventField]);
+
   return (
     <div className="bg-gray-100 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -74,10 +80,10 @@ const EventsPageInner: React.FC<EventsPageProps> = ({ isEditMode, selectedElemen
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {eventList.map((event) => (
+          {eventList.map(event => (
             <div 
               key={event.id} 
-              className="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl"
+              className="bg-white shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl"
               style={{ '--hover-color': '#f8f9fa' } as React.CSSProperties}
             >
               <ResizableImage
@@ -85,7 +91,7 @@ const EventsPageInner: React.FC<EventsPageProps> = ({ isEditMode, selectedElemen
                 alt={event.name}
                 isEditMode={isEditMode}
                 onResize={() => {}}
-                className="w-full h-[13rem] object-cover object-center"
+                className="w-full h-[13rem] object-cover object-center rounded-lg overflow-hidden"
                 showChangeButton={false}
                 onImageChange={newUrl => setEventImage(event.id, newUrl)}
                 imgProps={{ ['data-event-id']: event.id } as any}
@@ -138,8 +144,24 @@ const EventsPageInner: React.FC<EventsPageProps> = ({ isEditMode, selectedElemen
                     {event.attendees} attendees
                   </span>
                 </div>
-                <a href={event.link} target="_blank" rel="noopener noreferrer">
-                  <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
+                {/* Place the anchor/button here */}
+                <a
+                  href={event.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-event-id={event.id}
+                  onClick={e => {
+                    if (isEditMode) {
+                      e.preventDefault(); // Prevent navigation
+                      e.stopPropagation(); // Stop event propagation
+                      setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                    }
+                  }}
+                >
+                  <button
+                    className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block"
+                    data-event-id={event.id}
+                  >
                     Register Now
                   </button>
                 </a>

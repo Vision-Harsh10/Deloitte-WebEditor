@@ -1,5 +1,5 @@
 import { Trophy } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import LeaderboardSidebar from './LeaderboardSidebar';
 import ResizableImage from './ResizableImage';
 
@@ -81,6 +81,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
     }
   }, [isEditMode, leaders, imageDimensions]);
 
+  useEffect(() => {
+    localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(leaders));
+  }, [leaders]);
+
   const handleLeaderUpdate = (id: string, field: keyof Leader, value: string | number | string[]) => {
     setLeaders(prevLeaders => 
       prevLeaders.map(leader => 
@@ -95,6 +99,22 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
     setImageDimensions(newDimensions);
     localStorage.setItem(LEADERBOARD_IMAGE_DIMENSIONS_KEY, JSON.stringify(newDimensions));
   };
+
+  // Expose setter for link editing in edit mode
+  const handleLeaderLinkUpdate = useCallback((leaderId: string, newLink: string) => {
+    handleLeaderUpdate(leaderId, 'link', newLink);
+  }, [handleLeaderUpdate]);
+
+  useEffect(() => {
+    if (isEditMode) {
+      (window as any).setLeaderboardLinkForEditPanel = handleLeaderLinkUpdate;
+    } else {
+      (window as any).setLeaderboardLinkForEditPanel = undefined;
+    }
+    return () => {
+      (window as any).setLeaderboardLinkForEditPanel = undefined;
+    };
+  }, [isEditMode, handleLeaderLinkUpdate]);
 
   return (
     <>
@@ -131,7 +151,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
                   <ResizableImage
                     src={leader.imageUrl}
                     alt={leader.name}
-                    isEditMode={isEditMode}
+                    isEditMode={false}
                     onResize={(width, height) => handleImageResize(leader.id, width, height)}
                     className="w-16 h-16 rounded-full object-cover mr-4"
                     style={{
@@ -184,7 +204,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
                     {leader.points} Points
                   </span>
                 </div>
-                <a href={leader.link} target="_blank" rel="noopener noreferrer">
+                <a href={leader.link} target="_blank" rel="noopener noreferrer" data-leader-id={leader.id} onClick={e => { if (isEditMode) { e.preventDefault(); } }}>
                     <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
                         View Profile
                     </button>

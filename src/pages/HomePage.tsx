@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import HeroBanner from '../components/HeroBanner';
-import { Award, Calendar, BookOpen, Clock, Users, Briefcase, User, GraduationCap, BookMarked, Trophy, Star } from 'lucide-react';
+import { Award, Calendar, BookOpen, Clock, Users, Briefcase, User, GraduationCap, BookMarked, Trophy, Star, Camera } from 'lucide-react';
 import type { Event, Course, Lab, Opportunity, Mentor, Article } from '../types';
 import Leaderboard from '../components/Leaderboard';
 import ResizableImage from '../components/ResizableImage';
@@ -293,6 +293,21 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
     setImageDimensions(id, width, height);
   };
 
+  React.useEffect(() => {
+    // Expose setEventField for EditModeControls
+    (window as any).setEventFieldForEditPanel = setEventField;
+    (window as any).setCourseFieldForEditPanel = setCourseField;
+    (window as any).setOpportunityFieldForEditPanel = setOpportunityField;
+    (window as any).setArticleFieldForEditPanel = setArticleField;
+    
+    return () => {
+      (window as any).setEventFieldForEditPanel = undefined;
+      (window as any).setCourseFieldForEditPanel = undefined;
+      (window as any).setOpportunityFieldForEditPanel = undefined;
+      (window as any).setArticleFieldForEditPanel = undefined;
+    };
+  }, [setEventField, setCourseField, setOpportunityField, setArticleField]);
+
   return (
     <>
       <main>
@@ -397,7 +412,7 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         <span>{editableContent.eventContent[event.id]?.attendees || event.attendees} attendees</span>
                       )}
                     </div>
-                    <a href={event.link} target="_blank" rel="noopener noreferrer">
+                    <a href={editableContent.eventContent[event.id]?.link || event.link} target="_blank" rel="noopener noreferrer" data-event-id={event.id}>
                       <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
                         Register Now
                       </button>
@@ -510,7 +525,7 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         </span>
                       )}
                     </div>
-                    <a href={course.link} target="_blank" rel="noopener noreferrer">
+                    <a href={editableContent.courseContent[course.id]?.link || course.link} target="_blank" rel="noopener noreferrer" data-course-id={course.id}>
                       <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
                         Start Learning
                       </button>
@@ -566,7 +581,7 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                     <ResizableImage
                       src={editableContent.mentorImages[mentor.id] || mentor.imageUrl}
                       alt={mentor.name}
-                      isEditMode={isEditMode}
+                      isEditMode={false} // Disable adjust feature for mentor images
                       onResize={(width, height) => handleImageResize(`mentor-${mentor.id}`, width, height)}
                       className="relative z-10 w-44 h-44 rounded-full object-cover border-4 border-white shadow-lg"
                       style={{
@@ -576,6 +591,19 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                       }}
                       showMoveButton={false}
                     />
+                    {isEditMode && (
+                      <label htmlFor={`upload-mentor-image-${mentor.id}`} className="absolute bottom-2 right-2 z-20 cursor-pointer bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors">
+                        <Camera className="w-5 h-5 text-gray-700" />
+                        <input
+                          id={`upload-mentor-image-${mentor.id}`}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleGlobalUploadImage(e.target.files?.[0] as File)}
+                          data-mentor-id={mentor.id}
+                        />
+                      </label>
+                    )}
                   </div>
                   <div className="p-6">
                     {isEditMode ? (
@@ -637,7 +665,7 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         ))}
                       </div>
                     </div>
-                    <a href={mentor.link} target="_blank" rel="noopener noreferrer">
+                    <a href={editableContent.mentorImages[mentor.id] || mentor.link} target="_blank" rel="noopener noreferrer" data-mentor-id={mentor.id}>
                       <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
                         Connect
                       </button>
@@ -776,6 +804,7 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                       href={editableContent.opportunityContent[opportunity.id]?.link || opportunity.link}
                       target="_blank"
                       className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block"
+                      data-opportunity-id={opportunity.id}
                     >
                       Apply Now
                     </a>
@@ -888,7 +917,7 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         )}
                       </div>
                     </div>
-                    <a href={editableContent.articleContent[article.id]?.link || article.link} target="_blank" rel="noopener noreferrer">
+                    <a href={editableContent.articleContent[article.id]?.link || article.link} target="_blank" rel="noopener noreferrer" data-article-id={article.id}>
                       <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
                         Read More
                       </button>

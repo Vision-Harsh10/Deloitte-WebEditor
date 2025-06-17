@@ -4,7 +4,7 @@ import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
 import EventsPage from './pages/EventsPage';
-import LearningPage from './pages/LearningPage';
+import LearningPage, { courses as learningPageCourses } from './pages/LearningPage';
 import LabsPage from './pages/LabsPage';
 import MentorshipPage from './pages/MentorshipPage';
 import OpportunitiesPage from './pages/OpportunitiesPage';
@@ -17,7 +17,12 @@ import WebsiteBuilder from './components/WebsiteBuilder';
 import { saveWebsiteState } from './utils/saveWebsiteState';
 import { EditHistory } from './types/website';
 import { generateBuild } from './utils/buildGenerator';
-import { useEventEdit } from './context/EventEditContext';
+import { useEventEdit, EventEditProvider } from './context/EventEditContext';
+import { useLearningPageEdit, LearningPageEditProvider } from './context/LearningPageEditContext';
+import { useMentorshipPageEdit, MentorshipPageEditProvider } from './context/MentorshipPageEditContext';
+import { OpportunitiesPageEditProvider, useOpportunitiesPageEdit } from './context/OpportunitiesPageEditContext';
+import { InsightsPageEditProvider, useInsightsPageEdit } from './context/InsightsPageEditContext';
+import { FooterEditProvider, useFooterEdit } from './context/FooterEditContext';
 
 function App() {
   const [isEditMode, setIsEditMode] = useState(false);
@@ -29,6 +34,46 @@ function App() {
   const eventEdit = (() => {
     try {
       return useEventEdit();
+    } catch {
+      return null;
+    }
+  })();
+
+  const learningPageEdit = (() => {
+    try {
+      return useLearningPageEdit();
+    } catch {
+      return null;
+    }
+  })();
+
+  const mentorshipPageEdit = (() => {
+    try {
+      return useMentorshipPageEdit();
+    } catch {
+      return null;
+    }
+  })();
+
+  const opportunitiesPageEdit = (() => {
+    try {
+      return useOpportunitiesPageEdit();
+    } catch {
+      return null;
+    }
+  })();
+
+  const insightsPageEdit = (() => {
+    try {
+      return useInsightsPageEdit();
+    } catch {
+      return null;
+    }
+  })();
+
+  const footerEdit = (() => {
+    try {
+      return useFooterEdit();
     } catch {
       return null;
     }
@@ -55,12 +100,34 @@ function App() {
     if (isEditMode) {
       const handleClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
+        // console.log('Clicked target:', target.tagName, target);
+
         if (!target || target === document.body) return;
         // Don't select if clicking on edit controls or command palette
         if (target.closest('.edit-controls') || target.closest('.command-palette')) {
+          // console.log('Clicked on edit controls or command palette, returning.');
           return;
         }
+
+        // Check if the clicked target is a button or is inside a button
+        const clickedButton = target.closest('button');
+        // console.log('Closest button:', clickedButton?.tagName, clickedButton);
+
+        if (clickedButton) {
+          // If a button was clicked or a child of a button was clicked, check its parent for an anchor
+          const parentAnchorOfButton = clickedButton.closest('a');
+          // console.log('Parent anchor of button:', parentAnchorOfButton?.tagName, parentAnchorOfButton);
+
+          if (parentAnchorOfButton) {
+            setSelectedElement(parentAnchorOfButton);
+            // console.log('Selected Element set to ANCHOR:', parentAnchorOfButton);
+            return; // Exit after selecting the anchor
+          }
+        }
+        
+        // Default behavior: select the clicked target
         setSelectedElement(target);
+        // console.log('Selected Element set to TARGET:', target);
       };
       document.addEventListener('click', handleClick, { capture: true });
       return () => {
@@ -94,7 +161,7 @@ function App() {
       document.body.classList.add('edit-mode');
     } else {
       document.body.classList.remove('edit-mode');
-    }
+    };
     return () => {
       document.body.classList.remove('edit-mode');
     };
@@ -339,6 +406,45 @@ function App() {
     }
   };
 
+  const handleLinkChange = (newLink: string) => {
+    if (!selectedElement) return;
+
+    const eventId = selectedElement.dataset.eventId;
+    const courseId = selectedElement.dataset.courseId;
+    const mentorId = selectedElement.dataset.mentorId;
+    const opportunityId = selectedElement.dataset.opportunityId;
+    const articleId = selectedElement.dataset.articleId;
+    const footerLinkId = selectedElement.dataset.footerLinkId;
+    const leaderId = selectedElement.dataset.leaderId;
+
+    console.log('handleLinkChange - selectedElement.dataset:', selectedElement.dataset);
+    console.log('handleLinkChange - window.setEventFieldForEditPanel:', (window as any).setEventFieldForEditPanel);
+    console.log('handleLinkChange - window.setCourseFieldForEditPanel:', (window as any).setCourseFieldForEditPanel);
+    console.log('handleLinkChange - window.setMentorFieldForEditPanel:', (window as any).setMentorFieldForEditPanel);
+    console.log('handleLinkChange - window.setOpportunityFieldForEditPanel:', (window as any).setOpportunityFieldForEditPanel);
+    console.log('handleLinkChange - window.setArticleFieldForEditPanel:', (window as any).setArticleFieldForEditPanel);
+    console.log('handleLinkChange - window.setFooterLinkForEditPanel:', (window as any).setFooterLinkForEditPanel);
+
+    if (eventId && (window as any).setEventFieldForEditPanel) {
+      (window as any).setEventFieldForEditPanel(eventId, 'link', newLink);
+    } else if (courseId && (window as any).setCourseFieldForEditPanel) {
+      (window as any).setCourseFieldForEditPanel(courseId, 'link', newLink);
+    } else if (mentorId && (window as any).setMentorFieldForEditPanel) {
+      (window as any).setMentorFieldForEditPanel(mentorId, 'link', newLink);
+    } else if (opportunityId && (window as any).setOpportunityFieldForEditPanel) {
+      (window as any).setOpportunityFieldForEditPanel(opportunityId, 'link', newLink);
+    } else if (articleId && (window as any).setArticleFieldForEditPanel) {
+      (window as any).setArticleFieldForEditPanel(articleId, 'link', newLink);
+    } else if (footerLinkId && (window as any).setFooterLinkForEditPanel) {
+      (window as any).setFooterLinkForEditPanel(footerLinkId, 'link', newLink);
+    } else if (leaderId && (window as any).setLeaderboardLinkForEditPanel) {
+      (window as any).setLeaderboardLinkForEditPanel(leaderId, newLink);
+    } else {
+      console.log('handleLinkChange: No valid eventId, courseId, mentorId, opportunityId, articleId, or footerLinkId found on selected element.');
+      console.log('selectedElement:', selectedElement.dataset);
+    }
+  };
+
   return (
     <Router>
       <div className="min-h-screen flex flex-col">
@@ -353,6 +459,7 @@ function App() {
               onComponentAction={handleComponentAction}
               selectedElement={selectedElement}
               onGenerateBuild={handleGenerateBuild}
+              onLinkChange={handleLinkChange}
               className="edit-controls z-50"
             />
           </>
@@ -368,17 +475,59 @@ function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<HomePage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />} />
-            <Route path="/events" element={<EventsPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />} />
-            <Route path="/learning" element={<LearningPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />} />
+            <Route path="/events" element={
+              <EventEditProvider initialEvents={[]}>
+                <EventsPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+              </EventEditProvider>
+            } />
+            <Route path="/learning" element={
+              <LearningPageEditProvider
+                initialContent={{
+                  courseContent: Object.fromEntries(
+                    learningPageCourses.map(course => [
+                      course.id,
+                      {
+                        title: course.title,
+                        description: course.description,
+                        duration: course.duration,
+                        level: course.level,
+                        imageUrl: course.imageUrl,
+                        link: course.link
+                      }
+                    ])
+                  )
+                }}
+              >
+                <LearningPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+              </LearningPageEditProvider>
+            } />
             <Route path="/labs" element={<LabsPage />} />
-            <Route path="/mentorship" element={<MentorshipPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />} />
-            <Route path="/opportunities" element={<OpportunitiesPage />} />
+            <Route path="/mentorship" element={
+              <MentorshipPageEditProvider>
+                <MentorshipPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+              </MentorshipPageEditProvider>
+            } />
+            <Route path="/opportunities" element={
+              <OpportunitiesPageEditProvider>
+                <OpportunitiesPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+              </OpportunitiesPageEditProvider>
+            } />
             <Route path="/careers" element={<CareersPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />} />
-            <Route path="/insights" element={<InsightsPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />} />
+            <Route path="/insights" element={
+              <InsightsPageEditProvider>
+                <InsightsPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+              </InsightsPageEditProvider>
+            } />
             {/* <Route path="/builder" element={<WebsiteBuilder />} /> */}
           </Routes>
         </main>
-        <Footer />
+        <FooterEditProvider>
+          <Footer
+            isEditMode={isEditMode}
+            selectedElement={selectedElement}
+            setSelectedElement={setSelectedElement}
+          />
+        </FooterEditProvider>
       </div>
 
       <CommandPalette

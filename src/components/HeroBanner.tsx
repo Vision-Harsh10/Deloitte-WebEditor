@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ResizableImage from './ResizableImage';
+import { Camera } from 'lucide-react';
 
 interface HeroBannerProps {
   isEditMode: boolean;
@@ -118,17 +119,38 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement 
           <ResizableImage
             src={backgroundImage}
             alt="Hero Banner Background"
-            isEditMode={isEditMode}
+            isEditMode={false}
             onResize={handleImageResize}
             className="w-full h-full object-cover object-center opacity-20"
             style={{
               width: imageDimensions.width || '100%',
               height: imageDimensions.height || '100%',
             }}
-            showChangeButton={isEditMode}
+            showChangeButton={false}
             onImageChange={(newUrl) => setBackgroundImage(newUrl)}
             showMoveButton={false}
           />
+          {isEditMode && (
+            <label htmlFor="upload-hero-banner-image" className="absolute bottom-4 left-4 z-20 cursor-pointer bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors">
+              <Camera className="w-5 h-5 text-gray-700" />
+              <input
+                id="upload-hero-banner-image"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      setBackgroundImage(event.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </label>
+          )}
         </div>
       </div>
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

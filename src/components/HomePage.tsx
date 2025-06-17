@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import HeroBanner from '../components/HeroBanner';
-import { Award, Calendar, BookOpen,Clock, Users, Briefcase, User, GraduationCap, BookMarked, Trophy, Star } from 'lucide-react';
+import { Award, Calendar, BookOpen, Clock, Users, Briefcase, User, GraduationCap, BookMarked, Trophy, Star, Camera } from 'lucide-react';
 import type { Event, Course, Lab, Opportunity, Mentor, Article} from '../types';
 import Leaderboard from '../components/Leaderboard';
 

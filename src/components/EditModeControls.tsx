@@ -30,6 +30,7 @@ interface EditModeControlsProps {
   selectedElement: HTMLElement | null;
   className?: string;
   onGenerateBuild?: () => void;
+  onLinkChange?: (newLink: string) => void;
 }
 
 const EditModeControls: React.FC<EditModeControlsProps> = ({
@@ -39,12 +40,14 @@ const EditModeControls: React.FC<EditModeControlsProps> = ({
   selectedElement,
   className = '',
   onGenerateBuild,
+  onLinkChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'text' | 'layout' | 'image' | 'style'>('text');
+  const [activeTab, setActiveTab] = useState<'text' | 'layout' | 'image' | 'style' | 'link'>('text');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [showOpacityPicker, setShowOpacityPicker] = useState(false);
   const [currentColor, setCurrentColor] = useState('#000000');
+  const [currentLink, setCurrentLink] = useState('');
   const colorButtonSelectionRef = useRef<Range | null>(null);
 
   // Movable panel state
@@ -536,7 +539,7 @@ main { padding: 2rem; text-align: center; }`);
     selectedElement.style.lineHeight = '';
     selectedElement.style.letterSpacing = '';
     onStyleChange({
-      fontWeight: '', fontStyle: '', textDecoration: '', fontSize: '', fontFamily: '', lineHeight: '', letterSpacing: ''
+      fontWeight: '', fontStyle: '', textDecoration: '', fontSize: '', fontFamily: '', lineHeight: '', letterSpacing: '',
     });
   };
   const resetColor = () => {
@@ -644,6 +647,25 @@ main { padding: 2rem; text-align: center; }`);
     return styles;
   };
 
+  // Update currentLink state when selectedElement changes and is a link
+  useEffect(() => {
+    if (selectedElement && selectedElement.tagName.toLowerCase() === 'a') {
+      setCurrentLink((selectedElement as HTMLAnchorElement).href);
+    } else {
+      setCurrentLink('');
+    }
+  }, [selectedElement]);
+
+  const handleLinkInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrentLink(e.target.value);
+  };
+
+  const handleLinkSave = () => {
+    if (!selectedElement || !onLinkChange) return;
+
+    onLinkChange(currentLink);
+  };
+
   return (
     <div
       className={`fixed bg-white rounded-lg shadow-lg p-4 w-64 z-50 ${className}`}
@@ -697,6 +719,12 @@ main { padding: 2rem; text-align: center; }`);
           onClick={() => setActiveTab('style')}
         >
           <Palette size={20} />
+        </button>
+        <button
+          className={`p-2 ${activeTab === 'link' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+          onClick={() => setActiveTab('link')}
+        >
+          <Link size={20} />
         </button>
       </div>
 
@@ -1016,6 +1044,36 @@ main { padding: 2rem; text-align: center; }`);
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Link Controls */}
+      {activeTab === 'link' && selectedElement?.tagName.toLowerCase() === 'a' && (
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="link-url" className="block text-sm font-medium mb-1">URL</label>
+            <input
+              id="link-url"
+              type="url"
+              value={currentLink}
+              onChange={handleLinkInputChange}
+              onBlur={handleLinkSave}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleLinkSave();
+                  e.currentTarget.blur(); // Remove focus after saving
+                }
+              }}
+              className="w-full p-2 border rounded"
+              placeholder="https://example.com"
+            />
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'link' && selectedElement?.tagName.toLowerCase() !== 'a' && (
+        <div className="p-4 text-center text-gray-500">
+          Select a link element to edit its URL.
         </div>
       )}
 

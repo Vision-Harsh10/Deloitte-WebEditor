@@ -1,7 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useFooterEdit } from '../context/FooterEditContext';
 
-const Footer = () => {
+interface FooterProps {
+  isEditMode: boolean;
+  selectedElement: HTMLElement | null;
+  setSelectedElement: (el: HTMLElement | null) => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
+  const { footerLinks, setFooterLink } = useFooterEdit();
+
+  useEffect(() => {
+    // Expose setFooterLink for EditModeControls
+    (window as any).setFooterLinkForEditPanel = setFooterLink;
+    return () => { (window as any).setFooterLinkForEditPanel = undefined; };
+  }, [setFooterLink]);
+
+  // Helper to get link data from context
+  const getFooterLink = (id: string) => {
+    return footerLinks.find(link => link.id === id);
+  };
+
   return (
     <footer className="bg-[#F5F5F4] text-black">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -9,9 +29,48 @@ const Footer = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">About</h3>
             <ul className="space-y-2">
-              <li><Link to="https://www2.deloitte.com/ui/en/legal/about-deloitte.html?icid=bottom_" className="hover:text-[#00a3ba]">About Us</Link></li>
-              <li><Link to="https://www.deloitte.com/in/en/contact/contact-us.html" className="hover:text-[#00a3ba]">Contact</Link></li>
-              <li><Link to="https://www.deloitte.com/global/en/legal/privacy.html?icid=bn_privacy" className="hover:text-[#00a3ba]">Privacy Policy</Link></li>
+              <li><a
+                href={getFooterLink('about-us')?.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#00a3ba]"
+                data-footer-link-id="about-us"
+                onClick={e => {
+                  if (isEditMode) {
+                    e.preventDefault(); // Prevent navigation
+                    e.stopPropagation(); // Stop event propagation
+                    setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                  }
+                }}
+              >About Us</a></li>
+              <li><a
+                href={getFooterLink('contact')?.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#00a3ba]"
+                data-footer-link-id="contact"
+                onClick={e => {
+                  if (isEditMode) {
+                    e.preventDefault(); // Prevent navigation
+                    e.stopPropagation(); // Stop event propagation
+                    setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                  }
+                }}
+              >Contact</a></li>
+              <li><a
+                href={getFooterLink('privacy-policy')?.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#00a3ba]"
+                data-footer-link-id="privacy-policy"
+                onClick={e => {
+                  if (isEditMode) {
+                    e.preventDefault(); // Prevent navigation
+                    e.stopPropagation(); // Stop event propagation
+                    setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                  }
+                }}
+              >Privacy Policy</a></li>
             </ul>
           </div>
           <div className="space-y-4">
@@ -33,10 +92,62 @@ const Footer = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Connect</h3>
             <ul className="space-y-2">
-              <li><a href="https://www.linkedin.com/company/deloitte/" className="hover:text-[#00a3ba]">LinkedIn</a></li>
-              <li><a href="https://x.com/deloitte?lang=en" className="hover:text-[#00a3ba]">Twitter</a></li>
-              <li><a href="https://www.instagram.com/deloitte/?hl=en" className="hover:text-[#00a3ba]">Instagram</a></li>
-              <li><a href="https://www.deloitte.com/global/en.html" className="hover:text-[#00a3ba]">Website</a></li>
+              <li><a
+                href={getFooterLink('linkedin')?.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#00a3ba]"
+                data-footer-link-id="linkedin"
+                onClick={e => {
+                  if (isEditMode) {
+                    e.preventDefault(); // Prevent navigation
+                    e.stopPropagation(); // Stop event propagation
+                    setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                  }
+                }}
+              >LinkedIn</a></li>
+              <li><a
+                href={getFooterLink('twitter')?.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#00a3ba]"
+                data-footer-link-id="twitter"
+                onClick={e => {
+                  if (isEditMode) {
+                    e.preventDefault(); // Prevent navigation
+                    e.stopPropagation(); // Stop event propagation
+                    setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                  }
+                }}
+              >Twitter</a></li>
+              <li><a
+                href={getFooterLink('instagram')?.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#00a3ba]"
+                data-footer-link-id="instagram"
+                onClick={e => {
+                  if (isEditMode) {
+                    e.preventDefault(); // Prevent navigation
+                    e.stopPropagation(); // Stop event propagation
+                    setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                  }
+                }}
+              >Instagram</a></li>
+              <li><a
+                href={getFooterLink('website')?.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#00a3ba]"
+                data-footer-link-id="website"
+                onClick={e => {
+                  if (isEditMode) {
+                    e.preventDefault(); // Prevent navigation
+                    e.stopPropagation(); // Stop event propagation
+                    setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                  }
+                }}
+              >Website</a></li>
             </ul>
           </div>
         </div>

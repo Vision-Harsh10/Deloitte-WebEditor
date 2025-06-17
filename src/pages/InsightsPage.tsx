@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import type { Article } from '../types';
 import { BookMarked, Clock, User } from 'lucide-react';
 import ResizableImage from '../components/ResizableImage';
+import { useInsightsPageEdit } from '../context/InsightsPageEditContext';
 
-const articles: Article[] = [
+export const articles: Article[] = [
   {
     id: '1',
     title: "2025 Smart Manufacturing and Global's Survey",
@@ -40,33 +41,23 @@ interface InsightsPageProps {
 }
 
 const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
-  const [editableContent, setEditableContent] = useState<Record<string, string>>({});
-  const [imageDimensions, setImageDimensions] = useState<Record<string, { width: number; height: number }>>({});
+  const {
+    articleList,
+    setArticleImage,
+    setArticleField,
+    imageDimensions,
+    setArticleImageDimensions
+  } = useInsightsPageEdit();
 
   useEffect(() => {
-    // Load saved content from localStorage
-    const savedContent = localStorage.getItem('insightsPageContent');
-    if (savedContent) {
-      setEditableContent(JSON.parse(savedContent));
-    }
+    // Expose setArticleField for EditModeControls
+    (window as any).setArticleFieldForEditPanel = setArticleField;
+    return () => { (window as any).setArticleFieldForEditPanel = undefined; };
+  }, [setArticleField]);
 
-    // Load saved image dimensions from localStorage
-    const savedDimensions = localStorage.getItem('insightsPageImageDimensions');
-    if (savedDimensions) {
-      setImageDimensions(JSON.parse(savedDimensions));
-    }
-  }, []);
-
-  const handleContentChange = (id: string, content: string) => {
-    const newContent = { ...editableContent, [id]: content };
-    setEditableContent(newContent);
-    localStorage.setItem('insightsPageContent', JSON.stringify(newContent));
-  };
-
-  const handleImageResize = (articleId: string, width: number, height: number) => {
-    const newDimensions = { ...imageDimensions, [articleId]: { width, height } };
-    setImageDimensions(newDimensions);
-    localStorage.setItem('insightsPageImageDimensions', JSON.stringify(newDimensions));
+  // Helper to get article data from context or initial array
+  const getArticleData = (articleId: string) => {
+    return articleList.find(a => a.id === articleId) || articles.find(a => a.id === articleId);
   };
 
   return (
@@ -79,18 +70,18 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
             contentEditable={isEditMode}
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
-            onBlur={e => handleContentChange('hero-title', e.currentTarget.textContent || 'Explore Deloitte Insights')}
+            onBlur={e => setArticleField('hero-title', 'title' as keyof Article, e.currentTarget.textContent || 'Explore Deloitte Insights')}
           >
-            {editableContent['hero-title'] || 'Explore Deloitte Insights'}
+            {getArticleData('hero-title')?.title || 'Explore Deloitte Insights'}
           </h1>
           <p
             className="text-xl text-[#ffffff] outline-none"
             contentEditable={isEditMode}
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
-            onBlur={e => handleContentChange('hero-description', e.currentTarget.textContent || 'Stay updated with the latest in technology and innovation')}
+            onBlur={e => setArticleField('hero-description', 'description' as keyof Article, e.currentTarget.textContent || 'Stay updated with the latest in technology and innovation')}
           >
-            {editableContent['hero-description'] || 'Stay updated with the latest in technology and innovation'}
+            {getArticleData('hero-description')?.description || 'Stay updated with the latest in technology and innovation'}
           </p>
         </div>
       </div>
@@ -104,14 +95,14 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
             contentEditable={isEditMode}
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
-            onBlur={e => handleContentChange('articles-title', e.currentTarget.textContent || 'Featured Articles')}
+            onBlur={e => setArticleField('articles-title', 'title' as keyof Article, e.currentTarget.textContent || 'Featured Articles')}
           >
-            {editableContent['articles-title'] || 'Featured Articles'}
+            {getArticleData('articles-title')?.title || 'Featured Articles'}
           </h2>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {articles.map((article) => (
+          {articleList.map((article) => (
             <div 
               key={article.id} 
               className="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl"
@@ -121,11 +112,11 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
                 src={article.imageUrl}
                 alt={article.title}
                 isEditMode={isEditMode}
-                onResize={(width, height) => handleImageResize(article.id, width, height)}
-                className="w-full h-48 object-cover"
+                onResize={(width, height) => setArticleImageDimensions(article.id, width, height)}
+                className={`object-cover ${!imageDimensions[article.id] ? 'w-full h-48' : ''}`}
                 style={{
-                  width: imageDimensions[article.id]?.width || '100%',
-                  height: imageDimensions[article.id]?.height || '12rem'
+                  ...(imageDimensions[article.id]?.width ? { width: imageDimensions[article.id].width + 'px' } : {}),
+                  ...(imageDimensions[article.id]?.height ? { height: imageDimensions[article.id].height + 'px' } : {}),
                 }}
               />
               <div className="p-6">
@@ -134,18 +125,18 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
                   contentEditable={isEditMode}
                   suppressContentEditableWarning
                   onClick={e => setSelectedElement(e.currentTarget)}
-                  onBlur={e => handleContentChange(`article-${article.id}-title`, e.currentTarget.textContent || article.title)}
+                  onBlur={e => setArticleField(article.id, 'title', e.currentTarget.textContent || article.title)}
                 >
-                  {editableContent[`article-${article.id}-title`] || article.title}
+                  {article.title}
                 </h3>
                 <p
                   className="text-[#73859f] mb-4 outline-none"
                   contentEditable={isEditMode}
                   suppressContentEditableWarning
                   onClick={e => setSelectedElement(e.currentTarget)}
-                  onBlur={e => handleContentChange(`article-${article.id}-description`, e.currentTarget.textContent || article.description)}
+                  onBlur={e => setArticleField(article.id, 'description', e.currentTarget.textContent || article.description)}
                 >
-                  {editableContent[`article-${article.id}-description`] || article.description}
+                  {article.description}
                 </p>
                 <div className="flex items-center justify-between text-[#303030] text-sm mb-4">
                   <div className="flex items-center">
@@ -155,9 +146,9 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
                       contentEditable={isEditMode}
                       suppressContentEditableWarning
                       onClick={e => setSelectedElement(e.currentTarget)}
-                      onBlur={e => handleContentChange(`article-${article.id}-date`, e.currentTarget.textContent || new Date(article.date).toLocaleDateString())}
+                      onBlur={e => setArticleField(article.id, 'date', e.currentTarget.textContent || article.date)}
                     >
-                      {editableContent[`article-${article.id}-date`] || new Date(article.date).toLocaleDateString()}
+                      {article.date}
                     </span>
                   </div>
                   <div className="flex items-center">
@@ -167,13 +158,25 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
                       contentEditable={isEditMode}
                       suppressContentEditableWarning
                       onClick={e => setSelectedElement(e.currentTarget)}
-                      onBlur={e => handleContentChange(`article-${article.id}-author`, e.currentTarget.textContent || article.author)}
+                      onBlur={e => setArticleField(article.id, 'author', e.currentTarget.textContent || article.author)}
                     >
-                      {editableContent[`article-${article.id}-author`] || article.author}
+                      {article.author}
                     </span>
                   </div>
                 </div>
-                <a href={article.link} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={article.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-article-id={article.id}
+                  onClick={e => {
+                    if (isEditMode) {
+                      e.preventDefault(); // Prevent navigation
+                      e.stopPropagation(); // Stop event propagation
+                      setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                    }
+                  }}
+                >
                   <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
                     Read More
                   </button>
@@ -190,9 +193,9 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
             contentEditable={isEditMode}
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
-            onBlur={e => handleContentChange('categories-title', e.currentTarget.textContent || 'Browse by Category')}
+            onBlur={e => setArticleField('categories-title', 'title' as keyof Article, e.currentTarget.textContent || 'Browse by Category')}
           >
-            {editableContent['categories-title'] || 'Browse by Category'}
+            {getArticleData('categories-title')?.title || 'Browse by Category'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div 
@@ -204,18 +207,18 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('category-1-title', e.currentTarget.textContent || 'Technology Trends')}
+                onBlur={e => setArticleField('category-1-title', 'title' as keyof Article, e.currentTarget.textContent || 'Technology Trends')}
               >
-                {editableContent['category-1-title'] || 'Technology Trends'}
+                {getArticleData('category-1-title')?.title || 'Technology Trends'}
               </h3>
               <p
                 className="text-gray-600 outline-none"
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('category-1-description', e.currentTarget.textContent || 'Latest developments in computing and technology')}
+                onBlur={e => setArticleField('category-1-description', 'description' as keyof Article, e.currentTarget.textContent || 'Latest developments in computing and technology')}
               >
-                {editableContent['category-1-description'] || 'Latest developments in computing and technology'}
+                {getArticleData('category-1-description')?.description || 'Latest developments in computing and technology'}
               </p>
             </div>
             <div 
@@ -227,18 +230,18 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('category-2-title', e.currentTarget.textContent || 'Research Papers')}
+                onBlur={e => setArticleField('category-2-title', 'title' as keyof Article, e.currentTarget.textContent || 'Research Papers')}
               >
-                {editableContent['category-2-title'] || 'Research Papers'}
+                {getArticleData('category-2-title')?.title || 'Research Papers'}
               </h3>
               <p
                 className="text-gray-600 outline-none"
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('category-2-description', e.currentTarget.textContent || 'Academic publications and research findings')}
+                onBlur={e => setArticleField('category-2-description', 'description' as keyof Article, e.currentTarget.textContent || 'Academic publications and research findings')}
               >
-                {editableContent['category-2-description'] || 'Academic publications and research findings'}
+                {getArticleData('category-2-description')?.description || 'Academic publications and research findings'}
               </p>
             </div>
             <div 
@@ -250,18 +253,18 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('category-3-title', e.currentTarget.textContent || 'Industry News')}
+                onBlur={e => setArticleField('category-3-title', 'title' as keyof Article, e.currentTarget.textContent || 'Industry News')}
               >
-                {editableContent['category-3-title'] || 'Industry News'}
+                {getArticleData('category-3-title')?.title || 'Industry News'}
               </h3>
               <p
                 className="text-gray-600 outline-none"
                 contentEditable={isEditMode}
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => handleContentChange('category-3-description', e.currentTarget.textContent || 'Updates from ServiceNow and the tech industry')}
+                onBlur={e => setArticleField('category-3-description', 'description' as keyof Article, e.currentTarget.textContent || 'Updates from ServiceNow and the tech industry')}
               >
-                {editableContent['category-3-description'] || 'Updates from ServiceNow and the tech industry'}
+                {getArticleData('category-3-description')?.description || 'Updates from ServiceNow and the tech industry'}
               </p>
             </div>
           </div>
@@ -275,18 +278,18 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
               contentEditable={isEditMode}
               suppressContentEditableWarning
               onClick={e => setSelectedElement(e.currentTarget)}
-              onBlur={e => handleContentChange('newsletter-title', e.currentTarget.textContent || 'Stay Updated')}
+              onBlur={e => setArticleField('newsletter-title', 'title' as keyof Article, e.currentTarget.textContent || 'Stay Updated')}
             >
-              {editableContent['newsletter-title'] || 'Stay Updated'}
+              {getArticleData('newsletter-title')?.title || 'Stay Updated'}
             </h2>
             <p
               className="mb-6 outline-none"
               contentEditable={isEditMode}
               suppressContentEditableWarning
               onClick={e => setSelectedElement(e.currentTarget)}
-              onBlur={e => handleContentChange('newsletter-description', e.currentTarget.textContent || 'Subscribe to our newsletter for the latest insights and updates')}
+              onBlur={e => setArticleField('newsletter-description', 'description' as keyof Article, e.currentTarget.textContent || 'Subscribe to our newsletter for the latest insights and updates')}
             >
-              {editableContent['newsletter-description'] || 'Subscribe to our newsletter for the latest insights and updates'}
+              {getArticleData('newsletter-description')?.description || 'Subscribe to our newsletter for the latest insights and updates'}
             </p>
             <div className="flex flex-col md:flex-row gap-4 justify-center">
               <input
