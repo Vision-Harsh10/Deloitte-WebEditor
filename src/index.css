@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.edit-mode * {
+  user-select: none !important;
+}
+
+/* Custom hover effect */
+.custom-hover:hover {
+  background-color: var(--hover-color, #f8f9fa) !important;
+}
