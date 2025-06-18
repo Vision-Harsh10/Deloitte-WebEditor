@@ -7,6 +7,7 @@ import Leaderboard from '../components/Leaderboard';
 import ResizableImage from '../components/ResizableImage';
 import { HomePageEditProvider, useHomePageEdit } from '../context/HomePageEditContext';
 import type { EditableContent } from '../context/HomePageEditContext';
+import { resizeImage } from '../utils/imageUtils';
 
 const articles: Article[] = [
   {
@@ -676,35 +677,50 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                       aria-hidden="true"
                     />
                     {/* Centered Circular Profile Image */}
-                    <ResizableImage
-                      src={editableContent.mentorImages[mentor.id] || mentor.imageUrl}
-                      alt={mentor.name}
-                      isEditMode={false} // Disable adjust feature for mentor images
-                      onResize={(width, height) => handleImageResize(`mentor-${mentor.id}`, width, height)}
-                      className="relative z-10 w-44 h-44 rounded-full object-cover border-4 border-white shadow-lg"
-                      style={{
-                        ...(imageDimensions[`mentor-${mentor.id}`]?.width ? { width: imageDimensions[`mentor-${mentor.id}`].width + 'px' } : {}),
-                        ...(imageDimensions[`mentor-${mentor.id}`]?.height ? { height: imageDimensions[`mentor-${mentor.id}`].height + 'px' } : {}),
-                        marginTop: '16px',
-                      }}
-                      showMoveButton={false}
-                      showChangeButton={true}
-                      onImageChange={newUrl => {
-                        setMentorImage(mentor.id, newUrl);
-                        // Force a re-render by updating the mentor image through the context
-                        const updatedMentors = { ...editableContent.mentorImages };
-                        updatedMentors[mentor.id] = newUrl;
-                        setEditableContent(prev => ({
-                          ...prev,
-                          mentorImages: updatedMentors
-                        }));
-                        localStorage.setItem('homePageContent', JSON.stringify({
-                          ...editableContent,
-                          mentorImages: updatedMentors
-                        }));
-                      }}
-                      imgProps={{ ['data-mentor-id']: mentor.id } as any}
-                    />
+                    <div className="relative">
+                      <img
+                        src={editableContent.mentorImages[mentor.id] || mentor.imageUrl}
+                        alt={mentor.name}
+                        className="relative z-10 w-44 h-44 rounded-full object-cover border-4 border-white shadow-lg"
+                        style={{
+                          ...(imageDimensions[`mentor-${mentor.id}`]?.width ? { width: imageDimensions[`mentor-${mentor.id}`].width + 'px' } : {}),
+                          ...(imageDimensions[`mentor-${mentor.id}`]?.height ? { height: imageDimensions[`mentor-${mentor.id}`].height + 'px' } : {}),
+                          marginTop: '16px',
+                        }}
+                        data-mentor-id={mentor.id}
+                      />
+                      {isEditMode && (
+                        <label htmlFor={`upload-featured-mentor-image-${mentor.id}`} className="absolute bottom-2 right-2 z-20 cursor-pointer bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors">
+                          <Camera className="w-5 h-5 text-gray-700" />
+                          <input
+                            id={`upload-featured-mentor-image-${mentor.id}`}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async e => {
+                              const file = e.target.files?.[0] || null;
+                              if (!file) return;
+                              try {
+                                const compressed = await resizeImage(file);
+                                setMentorImage(mentor.id, compressed);
+                                const updatedMentors = { ...editableContent.mentorImages };
+                                updatedMentors[mentor.id] = compressed;
+                                setEditableContent(prev => ({
+                                  ...prev,
+                                  mentorImages: updatedMentors
+                                }));
+                                localStorage.setItem('homePageContent', JSON.stringify({
+                                  ...editableContent,
+                                  mentorImages: updatedMentors
+                                }));
+                              } catch (err) {
+                                alert('Failed to process image. Please use a smaller image.');
+                              }
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
                   </div>
                   <div className="p-6">
                     {isEditMode ? (

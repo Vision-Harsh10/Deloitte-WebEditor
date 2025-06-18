@@ -1,7 +1,7 @@
 import { Trophy, Camera } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import LeaderboardSidebar from './LeaderboardSidebar';
-import ResizableImage from './ResizableImage';
+import { resizeImage } from '../utils/imageUtils';
 
 interface Leader {
   id: string;
@@ -162,21 +162,35 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
                   #{index + 1}
                 </div>
                 <div className="flex items-center mb-4">
-                  <ResizableImage
-                    src={leader.imageUrl}
-                    alt={leader.name}
-                    isEditMode={isEditMode}
-                    onResize={(width, height) => handleImageResize(leader.id, width, height)}
-                    className="w-16 h-16 rounded-full object-cover mr-4"
-                    style={{
-                      width: imageDimensions[leader.id]?.width || '4rem',
-                      height: imageDimensions[leader.id]?.height || '4rem',
-                    }}
-                    showMoveButton={false}
-                    showChangeButton={true}
-                    onImageChange={newUrl => handleImageChange(leader.id, newUrl)}
-                    imgProps={{ ['data-leader-id']: leader.id } as any}
-                  />
+                  <div className="relative">
+                    <img
+                      src={leader.imageUrl}
+                      alt={leader.name}
+                      className="w-16 h-16 rounded-full object-cover mr-4"
+                      data-leader-id={leader.id}
+                    />
+                    {isEditMode && (
+                      <label htmlFor={`upload-leader-image-${leader.id}`} className="absolute bottom-0 right-0 z-20 cursor-pointer bg-white p-1 rounded-full shadow-md hover:bg-gray-100 transition-colors">
+                        <Camera className="w-4 h-4 text-gray-700" />
+                        <input
+                          id={`upload-leader-image-${leader.id}`}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async e => {
+                            const file = e.target.files?.[0] || null;
+                            if (!file) return;
+                            try {
+                              const compressed = await resizeImage(file);
+                              handleImageChange(leader.id, compressed);
+                            } catch (err) {
+                              alert('Failed to process image. Please use a smaller image.');
+                            }
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
                   <div>
                     <h3
                       className="font-semibold text-lg text-[#303030]"
