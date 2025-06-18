@@ -1,4 +1,4 @@
-import { Trophy } from 'lucide-react';
+import { Trophy, Camera } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import LeaderboardSidebar from './LeaderboardSidebar';
 import ResizableImage from './ResizableImage';
@@ -100,6 +100,20 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
     localStorage.setItem(LEADERBOARD_IMAGE_DIMENSIONS_KEY, JSON.stringify(newDimensions));
   };
 
+  // Image change handler
+  const handleImageChange = (leaderId: string, newUrl: string) => {
+    setLeaders(prevLeaders => 
+      prevLeaders.map(leader => 
+        leader.id === leaderId ? { ...leader, imageUrl: newUrl } : leader
+      )
+    );
+    // Force a re-render by updating localStorage
+    const updatedLeaders = leaders.map(leader => 
+      leader.id === leaderId ? { ...leader, imageUrl: newUrl } : leader
+    );
+    localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(updatedLeaders));
+  };
+
   // Expose setter for link editing in edit mode
   const handleLeaderLinkUpdate = useCallback((leaderId: string, newLink: string) => {
     handleLeaderUpdate(leaderId, 'link', newLink);
@@ -151,7 +165,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
                   <ResizableImage
                     src={leader.imageUrl}
                     alt={leader.name}
-                    isEditMode={false}
+                    isEditMode={isEditMode}
                     onResize={(width, height) => handleImageResize(leader.id, width, height)}
                     className="w-16 h-16 rounded-full object-cover mr-4"
                     style={{
@@ -159,6 +173,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
                       height: imageDimensions[leader.id]?.height || '4rem',
                     }}
                     showMoveButton={false}
+                    showChangeButton={true}
+                    onImageChange={newUrl => handleImageChange(leader.id, newUrl)}
+                    imgProps={{ ['data-leader-id']: leader.id } as any}
                   />
                   <div>
                     <h3

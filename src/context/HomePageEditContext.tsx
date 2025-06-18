@@ -4,7 +4,7 @@ import type { Event, Course, Opportunity, Mentor, Article } from '../types';
 const LOCAL_STORAGE_KEY = 'homePageContent';
 const IMAGE_DIMENSIONS_KEY = 'homePageImageDimensions';
 
-interface EditableContent {
+export interface EditableContent {
   sectionTitles: {
     events: string;
     courses: string;
@@ -36,6 +36,7 @@ interface EditableContent {
     location: string;
     deadline: string;
     link: string;
+    imageUrl?: string;
   }>;
   articleContent: Record<string, {
     title: string;
@@ -43,6 +44,7 @@ interface EditableContent {
     date: string;
     author: string;
     link: string;
+    imageUrl?: string;
   }>;
 }
 
@@ -62,6 +64,8 @@ interface HomePageEditContextType {
   setCourseImage: (courseId: string, newUrl: string) => void;
   imageDimensions: Record<string, { width: number; height: number }>;
   setImageDimensions: (id: string, width: number, height: number) => void;
+  saveToLocalStorage: () => void;
+  setEditableContent: React.Dispatch<React.SetStateAction<EditableContent>>;
 }
 
 const HomePageEditContext = createContext<HomePageEditContextType | undefined>(undefined);
@@ -74,13 +78,23 @@ export const useHomePageEdit = () => {
 
 export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initialContent: EditableContent }> = ({ children, initialContent }) => {
   const [editableContent, setEditableContent] = useState<EditableContent>(() => {
+    try {
     const savedContent = localStorage.getItem(LOCAL_STORAGE_KEY);
     return savedContent ? JSON.parse(savedContent) : initialContent;
+    } catch (e) {
+      console.error("Failed to parse saved home page content, using initial content:", e);
+      return initialContent;
+    }
   });
 
   const [imageDimensions, setImageDimensionsState] = useState<Record<string, { width: number; height: number }>>(() => {
+    try {
     const savedDimensions = localStorage.getItem(IMAGE_DIMENSIONS_KEY);
     return savedDimensions ? JSON.parse(savedDimensions) : {};
+    } catch (e) {
+      console.error("Failed to parse saved image dimensions, using empty object:", e);
+      return {};
+    }
   });
 
   useEffect(() => {
@@ -194,6 +208,11 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
     }));
   };
 
+  const saveToLocalStorage = () => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(editableContent));
+    localStorage.setItem(IMAGE_DIMENSIONS_KEY, JSON.stringify(imageDimensions));
+  };
+
   const value: HomePageEditContextType = {
     editableContent,
     setSectionTitle,
@@ -209,7 +228,9 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
     setEventImage,
     setCourseImage,
     imageDimensions,
-    setImageDimensions
+    setImageDimensions,
+    saveToLocalStorage,
+    setEditableContent
   };
 
   return (

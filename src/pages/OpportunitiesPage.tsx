@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Opportunity } from '../types';
-import { Briefcase, Search, Calendar } from 'lucide-react';
+import { Briefcase, Search, Calendar, Camera } from 'lucide-react';
 import ResizableImage from '../components/ResizableImage';
 import { useOpportunitiesPageEdit } from '../context/OpportunitiesPageEditContext';
 
@@ -44,7 +44,23 @@ interface OpportunitiesPageProps {
 }
 
 const OpportunitiesPage: React.FC<OpportunitiesPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
-  const { opportunityList, setOpportunityImage, setOpportunityField } = useOpportunitiesPageEdit();
+  const { 
+    opportunityList, 
+    setOpportunityImage, 
+    setOpportunityField, 
+    imageDimensions, 
+    setOpportunityImageDimensions,
+    saveToLocalStorage 
+  } = useOpportunitiesPageEdit();
+
+  useEffect(() => {
+    if (!isEditMode) {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      saveToLocalStorage();
+    }
+  }, [isEditMode, saveToLocalStorage]);
 
   useEffect(() => {
     // Expose setOpportunityField for EditModeControls
@@ -79,8 +95,16 @@ const OpportunitiesPage: React.FC<OpportunitiesPageProps> = ({ isEditMode, selec
                 src={opportunity.imageUrl}
                 alt={opportunity.title}
                 isEditMode={isEditMode}
-                onResize={(width, height) => setOpportunityImage(opportunity.id, width.toString())}
-                className="w-full h-[13rem] object-cover object-center"
+                onResize={(width, height) => setOpportunityImageDimensions(opportunity.id, width, height)}
+                className={`object-cover ${!imageDimensions[opportunity.id] ? 'w-full h-[13rem]' : ''}`}
+                style={{
+                  ...(imageDimensions[opportunity.id]?.width ? { width: imageDimensions[opportunity.id].width + 'px' } : {}),
+                  ...(imageDimensions[opportunity.id]?.height ? { height: imageDimensions[opportunity.id].height + 'px' } : {}),
+                }}
+                showChangeButton={true}
+                showMoveButton={false}
+                onImageChange={newUrl => setOpportunityImage(opportunity.id, newUrl)}
+                imgProps={{ ['data-opportunity-id']: opportunity.id } as any}
               />
               <div className="p-6">
                 <h3

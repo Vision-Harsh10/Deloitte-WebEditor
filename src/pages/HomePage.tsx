@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import HeroBanner from '../components/HeroBanner';
 import { Award, Calendar, BookOpen, Clock, Users, Briefcase, User, GraduationCap, BookMarked, Trophy, Star, Camera } from 'lucide-react';
@@ -6,6 +6,7 @@ import type { Event, Course, Lab, Opportunity, Mentor, Article } from '../types'
 import Leaderboard from '../components/Leaderboard';
 import ResizableImage from '../components/ResizableImage';
 import { HomePageEditProvider, useHomePageEdit } from '../context/HomePageEditContext';
+import type { EditableContent } from '../context/HomePageEditContext';
 
 const articles: Article[] = [
   {
@@ -265,7 +266,20 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
     setCourseField,
     setOpportunityField,
     setArticleField,
+    setEditableContent,
   } = useHomePageEdit();
+
+  // Save to localStorage on exit edit mode
+  useEffect(() => {
+    if (!isEditMode) {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      // Save all content to localStorage
+      localStorage.setItem('homePageContent', JSON.stringify(editableContent));
+      localStorage.setItem('homePageImageDimensions', JSON.stringify(imageDimensions));
+    }
+  }, [isEditMode, editableContent, imageDimensions]);
 
   // Handler for global upload image action
   const handleGlobalUploadImage = (file: File) => {
@@ -274,15 +288,64 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
     const eventId = element.getAttribute('data-event-id');
     const courseId = element.getAttribute('data-course-id');
     const mentorId = element.getAttribute('data-mentor-id');
+    const articleId = element.getAttribute('data-article-id');
+    const opportunityId = element.getAttribute('data-opportunity-id');
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
       if (eventId) {
         setEventImage(eventId, result);
+        // Update localStorage for events
+        const updatedEvents = { ...editableContent.eventContent };
+        updatedEvents[eventId] = { ...updatedEvents[eventId], imageUrl: result };
+        localStorage.setItem('homePageContent', JSON.stringify({
+          ...editableContent,
+          eventContent: updatedEvents
+        }));
       } else if (courseId) {
         setCourseImage(courseId, result);
+        // Update localStorage for courses
+        const updatedCourses = { ...editableContent.courseContent };
+        updatedCourses[courseId] = { ...updatedCourses[courseId], imageUrl: result };
+        localStorage.setItem('homePageContent', JSON.stringify({
+          ...editableContent,
+          courseContent: updatedCourses
+        }));
       } else if (mentorId) {
         setMentorImage(mentorId, result);
+        // Update localStorage for mentors
+        const updatedMentors = { ...editableContent.mentorImages };
+        updatedMentors[mentorId] = result;
+        localStorage.setItem('homePageContent', JSON.stringify({
+          ...editableContent,
+          mentorImages: updatedMentors
+        }));
+      } else if (articleId) {
+        // Update article image through context
+        const updatedArticles = { ...editableContent.articleContent };
+        updatedArticles[articleId] = { ...updatedArticles[articleId], imageUrl: result };
+        setEditableContent((prev: EditableContent) => ({
+          ...prev,
+          articleContent: updatedArticles
+        }));
+        // Update localStorage
+        localStorage.setItem('homePageContent', JSON.stringify({
+          ...editableContent,
+          articleContent: updatedArticles
+        }));
+      } else if (opportunityId) {
+        // Update opportunity image through context
+        const updatedOpportunities = { ...editableContent.opportunityContent };
+        updatedOpportunities[opportunityId] = { ...updatedOpportunities[opportunityId], imageUrl: result };
+        setEditableContent((prev: EditableContent) => ({
+          ...prev,
+          opportunityContent: updatedOpportunities
+        }));
+        // Update localStorage
+        localStorage.setItem('homePageContent', JSON.stringify({
+          ...editableContent,
+          opportunityContent: updatedOpportunities
+        }));
       }
     };
     reader.readAsDataURL(file);
@@ -291,6 +354,9 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
   // Image resize handler
   const handleImageResize = (id: string, width: number, height: number) => {
     setImageDimensions(id, width, height);
+    // Update localStorage for image dimensions
+    const updatedDimensions = { ...imageDimensions, [id]: { width, height } };
+    localStorage.setItem('homePageImageDimensions', JSON.stringify(updatedDimensions));
   };
 
   React.useEffect(() => {
@@ -356,6 +422,22 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                       ...(imageDimensions[`event-${event.id}`]?.height ? { height: imageDimensions[`event-${event.id}`].height + 'px' } : {}),
                     }}
                     showMoveButton={false}
+                    showChangeButton={true}
+                    onImageChange={newUrl => {
+                      setEventImage(event.id, newUrl);
+                      // Force a re-render by updating the event content through the context
+                      const updatedEvents = { ...editableContent.eventContent };
+                      updatedEvents[event.id] = { ...updatedEvents[event.id], imageUrl: newUrl };
+                      setEditableContent(prev => ({
+                        ...prev,
+                        eventContent: updatedEvents
+                      }));
+                      localStorage.setItem('homePageContent', JSON.stringify({
+                        ...editableContent,
+                        eventContent: updatedEvents
+                      }));
+                    }}
+                    imgProps={{ ['data-event-id']: event.id } as any}
                   />
                   <div className="p-6">
                     {isEditMode ? (
@@ -467,6 +549,22 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         ...(imageDimensions[`course-${course.id}`]?.height ? { height: imageDimensions[`course-${course.id}`].height + 'px' } : {}),
                       }}
                       showMoveButton={false}
+                      showChangeButton={true}
+                      onImageChange={newUrl => {
+                        setCourseImage(course.id, newUrl);
+                        // Force a re-render by updating the course content through the context
+                        const updatedCourses = { ...editableContent.courseContent };
+                        updatedCourses[course.id] = { ...updatedCourses[course.id], imageUrl: newUrl };
+                        setEditableContent(prev => ({
+                          ...prev,
+                          courseContent: updatedCourses
+                        }));
+                        localStorage.setItem('homePageContent', JSON.stringify({
+                          ...editableContent,
+                          courseContent: updatedCourses
+                        }));
+                      }}
+                      imgProps={{ ['data-course-id']: course.id } as any}
                     />
                   </div>
                   <div className="p-6">
@@ -590,20 +688,23 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         marginTop: '16px',
                       }}
                       showMoveButton={false}
+                      showChangeButton={true}
+                      onImageChange={newUrl => {
+                        setMentorImage(mentor.id, newUrl);
+                        // Force a re-render by updating the mentor image through the context
+                        const updatedMentors = { ...editableContent.mentorImages };
+                        updatedMentors[mentor.id] = newUrl;
+                        setEditableContent(prev => ({
+                          ...prev,
+                          mentorImages: updatedMentors
+                        }));
+                        localStorage.setItem('homePageContent', JSON.stringify({
+                          ...editableContent,
+                          mentorImages: updatedMentors
+                        }));
+                      }}
+                      imgProps={{ ['data-mentor-id']: mentor.id } as any}
                     />
-                    {isEditMode && (
-                      <label htmlFor={`upload-mentor-image-${mentor.id}`} className="absolute bottom-2 right-2 z-20 cursor-pointer bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors">
-                        <Camera className="w-5 h-5 text-gray-700" />
-                        <input
-                          id={`upload-mentor-image-${mentor.id}`}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleGlobalUploadImage(e.target.files?.[0] as File)}
-                          data-mentor-id={mentor.id}
-                        />
-                      </label>
-                    )}
                   </div>
                   <div className="p-6">
                     {isEditMode ? (
@@ -708,7 +809,7 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                   style={{ '--hover-color': '#f8f9fa' } as React.CSSProperties}
                 >
                   <ResizableImage
-                    src={opportunity.imageUrl}
+                    src={editableContent.opportunityContent[opportunity.id]?.imageUrl || opportunity.imageUrl}
                     alt={editableContent.opportunityContent[opportunity.id]?.title || opportunity.title}
                     isEditMode={isEditMode}
                     onResize={(width, height) => handleImageResize(`opportunity-${opportunity.id}`, width, height)}
@@ -718,6 +819,22 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                       ...(imageDimensions[`opportunity-${opportunity.id}`]?.height ? { height: imageDimensions[`opportunity-${opportunity.id}`].height + 'px' } : {}),
                     }}
                     showMoveButton={false}
+                    showChangeButton={true}
+                    onImageChange={newUrl => {
+                      // Update opportunity image through context
+                      const updatedOpportunities = { ...editableContent.opportunityContent };
+                      updatedOpportunities[opportunity.id] = { ...updatedOpportunities[opportunity.id], imageUrl: newUrl };
+                      setEditableContent(prev => ({
+                        ...prev,
+                        opportunityContent: updatedOpportunities
+                      }));
+                      // Update localStorage
+                      localStorage.setItem('homePageContent', JSON.stringify({
+                        ...editableContent,
+                        opportunityContent: updatedOpportunities
+                      }));
+                    }}
+                    imgProps={{ ['data-opportunity-id']: opportunity.id } as any}
                   />
                   <div className="p-6">
                     {isEditMode ? (
@@ -846,7 +963,7 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                   style={{ '--hover-color': '#f8f9fa' } as React.CSSProperties}
                 >
                   <ResizableImage
-                    src={article.imageUrl}
+                    src={editableContent.articleContent[article.id]?.imageUrl || article.imageUrl}
                     alt={article.title}
                     isEditMode={isEditMode}
                     onResize={(width, height) => handleImageResize(`article-${article.id}`, width, height)}
@@ -856,6 +973,22 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                       ...(imageDimensions[`article-${article.id}`]?.height ? { height: imageDimensions[`article-${article.id}`].height + 'px' } : {}),
                     }}
                     showMoveButton={false}
+                    showChangeButton={true}
+                    onImageChange={newUrl => {
+                      // Update article image through context
+                      const updatedArticles = { ...editableContent.articleContent };
+                      updatedArticles[article.id] = { ...updatedArticles[article.id], imageUrl: newUrl };
+                      setEditableContent(prev => ({
+                        ...prev,
+                        articleContent: updatedArticles
+                      }));
+                      // Update localStorage
+                      localStorage.setItem('homePageContent', JSON.stringify({
+                        ...editableContent,
+                        articleContent: updatedArticles
+                      }));
+                    }}
+                    imgProps={{ ['data-article-id']: article.id } as any}
                   />
                   
                   <div className="p-6">

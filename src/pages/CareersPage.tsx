@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { Job } from '../types';
 import { Briefcase, MapPin, Search } from 'lucide-react';
+import { useJobApplication } from '../context/JobApplicationContext';
+import { Link } from 'react-router-dom';
 
 const jobs: Job[] = [
   {
@@ -51,6 +53,7 @@ interface CareersPageProps {
 
 const CareersPage: React.FC<CareersPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
   const [editableContent, setEditableContent] = useState<Record<string, string>>({});
+  const { setLastAppliedJob, lastAppliedJob } = useJobApplication();
 
   useEffect(() => {
     // Load saved content from localStorage
@@ -174,9 +177,23 @@ const CareersPage: React.FC<CareersPageProps> = ({ isEditMode, selectedElement, 
                     </div>
                   </div>
                 </div>
-                <button className="mt-4 md:mt-0 bg-[#62d84e] text-[#032d42] px-6 py-2 rounded-lg hover:bg-[#9fe793] hover:text-black transition-colors">
+                <Link 
+                  to={editableContent[`job-${job.id}-link`] || `/apply/${job.id}`}
+                  className="mt-4 md:mt-0 bg-[#62d84e] text-[#032d42] px-6 py-2 rounded-lg hover:bg-[#9fe793] hover:text-black transition-colors inline-block"
+                  onClick={() => {
+                    const jobData = {
+                      id: job.id,
+                      title: editableContent[`job-${job.id}-title`] || job.title,
+                      department: editableContent[`job-${job.id}-department`] || job.department,
+                      location: editableContent[`job-${job.id}-location`] || job.location,
+                      timestamp: new Date().toISOString(),
+                      applicationLink: editableContent[`job-${job.id}-link`] || `/apply/${job.id}`
+                    };
+                    setLastAppliedJob(jobData);
+                  }}
+                >
                   Apply Now
-                </button>
+                </Link>
               </div>
               <p
                 className="text-gray-900 mb-4 outline-none"

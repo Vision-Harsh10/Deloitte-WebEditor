@@ -14,6 +14,7 @@ interface HeroContent {
 
 const HERO_BANNER_STORAGE_KEY = 'heroBannerContent';
 const HERO_BANNER_IMAGE_DIMENSIONS_KEY = 'heroBannerImageDimensions';
+const HERO_BANNER_IMAGE_POSITION_KEY = 'heroBannerImagePosition';
 
 const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement }) => {
   const [heroContent, setHeroContent] = useState<HeroContent>(() => {
@@ -70,6 +71,14 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement 
     return saved ? JSON.parse(saved) : { width: 0, height: 0 };
   });
 
+  // Image position state
+  const [imagePosition, setImagePosition] = useState<{ x: number; y: number }>(() => {
+    const saved = localStorage.getItem(HERO_BANNER_IMAGE_POSITION_KEY);
+    return saved ? JSON.parse(saved) : { x: 0, y: 0 };
+  });
+
+  const [resetKey, setResetKey] = useState(0);
+
   // Save to localStorage on exit edit mode
   useEffect(() => {
     if (!isEditMode) {
@@ -82,8 +91,9 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement 
         gradientColors
       }));
       localStorage.setItem(HERO_BANNER_IMAGE_DIMENSIONS_KEY, JSON.stringify(imageDimensions));
+      localStorage.setItem(HERO_BANNER_IMAGE_POSITION_KEY, JSON.stringify(imagePosition));
     }
-  }, [isEditMode, heroContent, backgroundImage, gradientColors, imageDimensions]);
+  }, [isEditMode, heroContent, backgroundImage, gradientColors, imageDimensions, imagePosition]);
 
   const handleContentChange = (field: keyof HeroContent, value: string) => {
     setHeroContent((prev: HeroContent) => ({
@@ -106,6 +116,13 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement 
     localStorage.setItem(HERO_BANNER_IMAGE_DIMENSIONS_KEY, JSON.stringify(newDimensions));
   };
 
+  // Image reposition handler
+  const handleImagePositionChange = (x: number, y: number) => {
+    const newPosition = { x, y };
+    setImagePosition(newPosition);
+    localStorage.setItem(HERO_BANNER_IMAGE_POSITION_KEY, JSON.stringify(newPosition));
+  };
+
   return (
     <div className="relative bg-[#001f82] text-white py-24">
       <div className="absolute inset-0 overflow-hidden">
@@ -117,39 +134,59 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement 
         />
         <div className="absolute inset-0">
           <ResizableImage
+            key={resetKey}
             src={backgroundImage}
             alt="Hero Banner Background"
-            isEditMode={false}
+            isEditMode={isEditMode}
             onResize={handleImageResize}
+            onPositionChange={handleImagePositionChange}
+            {...(imageDimensions.width && imageDimensions.height ? {
+              initialWidth: imageDimensions.width,
+              initialHeight: imageDimensions.height
+            } : {})}
+            initialPosition={imagePosition}
             className="w-full h-full object-cover object-center opacity-20"
-            style={{
-              width: imageDimensions.width || '100%',
-              height: imageDimensions.height || '100%',
-            }}
+            style={{}}
             showChangeButton={false}
             onImageChange={(newUrl) => setBackgroundImage(newUrl)}
-            showMoveButton={false}
+            showMoveButton={true}
           />
           {isEditMode && (
-            <label htmlFor="upload-hero-banner-image" className="absolute bottom-4 left-4 z-20 cursor-pointer bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors">
-              <Camera className="w-5 h-5 text-gray-700" />
-              <input
-                id="upload-hero-banner-image"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      setBackgroundImage(event.target?.result as string);
-                    };
-                    reader.readAsDataURL(file);
-                  }
+            <div className="absolute bottom-4 left-4 z-20 flex flex-row gap-2">
+              <label htmlFor="upload-hero-banner-image" className="cursor-pointer bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors">
+                <Camera className="w-5 h-5 text-gray-700" />
+                <input
+                  id="upload-hero-banner-image"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setBackgroundImage(event.target?.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors flex items-center"
+                title="Reset Image Position & Size"
+                onClick={() => {
+                  setImageDimensions({ width: 0, height: 0 });
+                  setImagePosition({ x: 0, y: 0 });
+                  localStorage.setItem(HERO_BANNER_IMAGE_DIMENSIONS_KEY, JSON.stringify({ width: 0, height: 0 }));
+                  localStorage.setItem(HERO_BANNER_IMAGE_POSITION_KEY, JSON.stringify({ x: 0, y: 0 }));
+                  setResetKey(k => k + 1);
                 }}
-              />
-            </label>
+              >
+                <span className="w-5 h-5 flex items-center justify-center text-gray-700 font-bold">⟳</span>
+              </button>
+            </div>
           )}
         </div>
       </div>

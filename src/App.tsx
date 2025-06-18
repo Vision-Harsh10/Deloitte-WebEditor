@@ -9,7 +9,7 @@ import LabsPage from './pages/LabsPage';
 import MentorshipPage from './pages/MentorshipPage';
 import OpportunitiesPage from './pages/OpportunitiesPage';
 import CareersPage from './pages/CareersPage';
-import InsightsPage from './pages/InsightsPage';
+import InsightsPage, { articles } from './pages/InsightsPage';
 import CommandPalette from './components/CommandPalette';
 import ElementEditor from './components/ElementEditor';
 import EditModeControls from './components/EditModeControls';
@@ -23,6 +23,7 @@ import { useMentorshipPageEdit, MentorshipPageEditProvider } from './context/Men
 import { OpportunitiesPageEditProvider, useOpportunitiesPageEdit } from './context/OpportunitiesPageEditContext';
 import { InsightsPageEditProvider, useInsightsPageEdit } from './context/InsightsPageEditContext';
 import { FooterEditProvider, useFooterEdit } from './context/FooterEditContext';
+import { JobApplicationProvider } from './context/JobApplicationContext';
 
 function App() {
   const [isEditMode, setIsEditMode] = useState(false);
@@ -282,8 +283,43 @@ function App() {
                 if (typeof result === 'string') {
                   // Check for event card image
                   const eventId = selectedElement.getAttribute('data-event-id');
+                  const courseId = selectedElement.getAttribute('data-course-id');
+                  const articleId = selectedElement.getAttribute('data-article-id');
+                  const mentorId = selectedElement.getAttribute('data-mentor-id');
+                  const opportunityId = selectedElement.getAttribute('data-opportunity-id');
+
                   if (eventId && eventEdit) {
+                    // Update the event image in the context
                     eventEdit.setEventImage(eventId, result);
+                    // Force a re-render by updating localStorage
+                    const updatedEvents = eventEdit.eventList.map(ev => 
+                      ev.id === eventId ? { ...ev, imageUrl: result } : ev
+                    );
+                    localStorage.setItem('eventPageEvents', JSON.stringify(updatedEvents));
+                  } else if (courseId && learningPageEdit) {
+                    learningPageEdit.setCourseImage(courseId, result);
+                    const updatedCourses = learningPageEdit.courseList.map(c => 
+                      c.id === courseId ? { ...c, imageUrl: result } : c
+                    );
+                    localStorage.setItem('learningPageCourses', JSON.stringify(updatedCourses));
+                  } else if (articleId && insightsPageEdit) {
+                    insightsPageEdit.setArticleImage(articleId, result);
+                    const updatedArticles = insightsPageEdit.articleList.map(a => 
+                      a.id === articleId ? { ...a, imageUrl: result } : a
+                    );
+                    localStorage.setItem('insightsPageArticles', JSON.stringify(updatedArticles));
+                  } else if (mentorId && mentorshipPageEdit) {
+                    mentorshipPageEdit.setMentorImage(mentorId, result);
+                    const updatedMentors = mentorshipPageEdit.mentorList.map(m => 
+                      m.id === mentorId ? { ...m, imageUrl: result } : m
+                    );
+                    localStorage.setItem('mentorshipPageMentors', JSON.stringify(updatedMentors));
+                  } else if (opportunityId && opportunitiesPageEdit) {
+                    opportunitiesPageEdit.setOpportunityImage(opportunityId, result);
+                    const updatedOpportunities = opportunitiesPageEdit.opportunityList.map(o => 
+                      o.id === opportunityId ? { ...o, imageUrl: result } : o
+                    );
+                    localStorage.setItem('opportunitiesPageOpportunities', JSON.stringify(updatedOpportunities));
                   } else {
                     selectedElement.src = result;
                     const elementId = selectedElement.id || selectedElement.className || Math.random().toString();
@@ -446,96 +482,114 @@ function App() {
   };
 
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col">
-        {isEditMode && (
-          <>
-            <div className="fixed top-4 left-4 bg-blue-500 text-white px-4 py-2 rounded z-50">
-              Edit Mode Active - Click any element to edit
+    <JobApplicationProvider>
+      <Router>
+        <div className="min-h-screen flex flex-col">
+          {isEditMode && (
+            <>
+              <div className="fixed top-4 left-4 bg-blue-500 text-white px-4 py-2 rounded z-50">
+                Edit Mode Active - Click any element to edit
+              </div>
+              <EditModeControls
+                onStyleChange={handleStyleChange}
+                onLayoutChange={handleLayoutChange}
+                onComponentAction={handleComponentAction}
+                selectedElement={selectedElement}
+                onGenerateBuild={handleGenerateBuild}
+                onLinkChange={handleLinkChange}
+                className="edit-controls z-50"
+              />
+            </>
+          )}
+
+          {saveStatus && (
+            <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded z-50">
+              {saveStatus}
             </div>
-            <EditModeControls
-              onStyleChange={handleStyleChange}
-              onLayoutChange={handleLayoutChange}
-              onComponentAction={handleComponentAction}
+          )}
+
+          <Navigation />
+          <main className="flex-grow">
+            <Routes>
+              <Route path="/" element={<HomePage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />} />
+              <Route path="/events" element={
+                <EventEditProvider initialEvents={[]}>
+                  <EventsPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+                </EventEditProvider>
+              } />
+              <Route path="/learning" element={
+                <LearningPageEditProvider
+                  initialContent={{
+                    courseContent: Object.fromEntries(
+                      learningPageCourses.map(course => [
+                        course.id,
+                        {
+                          title: course.title,
+                          description: course.description,
+                          duration: course.duration,
+                          level: course.level,
+                          imageUrl: course.imageUrl,
+                          link: course.link
+                        }
+                      ])
+                    )
+                  }}
+                >
+                  <LearningPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+                </LearningPageEditProvider>
+              } />
+              <Route path="/labs" element={<LabsPage />} />
+              <Route path="/mentorship" element={
+                <MentorshipPageEditProvider>
+                  <MentorshipPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+                </MentorshipPageEditProvider>
+              } />
+              <Route path="/opportunities" element={
+                <OpportunitiesPageEditProvider>
+                  <OpportunitiesPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+                </OpportunitiesPageEditProvider>
+              } />
+              <Route path="/careers" element={<CareersPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />} />
+              <Route path="/insights" element={
+                <InsightsPageEditProvider
+                  initialContent={{
+                    articleContent: Object.fromEntries(
+                      articles.map(article => [
+                        article.id,
+                        {
+                          title: article.title,
+                          description: article.description,
+                          date: article.date,
+                          author: article.author,
+                          imageUrl: article.imageUrl,
+                          link: article.link
+                        }
+                      ])
+                    )
+                  }}
+                >
+                  <InsightsPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+                </InsightsPageEditProvider>
+              } />
+              {/* <Route path="/builder" element={<WebsiteBuilder />} /> */}
+            </Routes>
+          </main>
+          <FooterEditProvider>
+            <Footer
+              isEditMode={isEditMode}
               selectedElement={selectedElement}
-              onGenerateBuild={handleGenerateBuild}
-              onLinkChange={handleLinkChange}
-              className="edit-controls z-50"
+              setSelectedElement={setSelectedElement}
             />
-          </>
-        )}
+          </FooterEditProvider>
+        </div>
 
-        {saveStatus && (
-          <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded z-50">
-            {saveStatus}
-          </div>
-        )}
-
-        <Navigation />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<HomePage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />} />
-            <Route path="/events" element={
-              <EventEditProvider initialEvents={[]}>
-                <EventsPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
-              </EventEditProvider>
-            } />
-            <Route path="/learning" element={
-              <LearningPageEditProvider
-                initialContent={{
-                  courseContent: Object.fromEntries(
-                    learningPageCourses.map(course => [
-                      course.id,
-                      {
-                        title: course.title,
-                        description: course.description,
-                        duration: course.duration,
-                        level: course.level,
-                        imageUrl: course.imageUrl,
-                        link: course.link
-                      }
-                    ])
-                  )
-                }}
-              >
-                <LearningPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
-              </LearningPageEditProvider>
-            } />
-            <Route path="/labs" element={<LabsPage />} />
-            <Route path="/mentorship" element={
-              <MentorshipPageEditProvider>
-                <MentorshipPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
-              </MentorshipPageEditProvider>
-            } />
-            <Route path="/opportunities" element={
-              <OpportunitiesPageEditProvider>
-                <OpportunitiesPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
-              </OpportunitiesPageEditProvider>
-            } />
-            <Route path="/careers" element={<CareersPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />} />
-            <Route path="/insights" element={
-              <InsightsPageEditProvider>
-                <InsightsPage isEditMode={isEditMode} selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
-              </InsightsPageEditProvider>
-            } />
-            {/* <Route path="/builder" element={<WebsiteBuilder />} /> */}
-          </Routes>
-        </main>
-        <FooterEditProvider>
-          <Footer
-            isEditMode={isEditMode}
-            selectedElement={selectedElement}
-            setSelectedElement={setSelectedElement}
-          />
-        </FooterEditProvider>
-      </div>
-
-      <CommandPalette
-        isOpen={showCommandPalette}
-        onClose={() => setShowCommandPalette(false)}
-        onSelect={handleCommandSelect}
-      />
-    </Router>
+        <CommandPalette
+          isOpen={showCommandPalette}
+          onClose={() => setShowCommandPalette(false)}
+          onSelect={handleCommandSelect}
+        />
+      </Router>
+    </JobApplicationProvider>
   );
 }
 

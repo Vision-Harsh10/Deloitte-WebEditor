@@ -46,8 +46,27 @@ interface EventsPageProps {
 
 const LOCAL_STORAGE_KEY = 'eventPageEvents';
 
-const EventsPageInner: React.FC<EventsPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
-  const { eventList, setEventImage, setEventField, saveToLocalStorage } = useEventEdit();
+const EventsPage: React.FC<EventsPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
+  return (
+    <EventEditProvider initialEvents={events}>
+      <EventsPageContent
+        isEditMode={isEditMode}
+        selectedElement={selectedElement}
+        setSelectedElement={setSelectedElement}
+      />
+    </EventEditProvider>
+  );
+};
+
+const EventsPageContent: React.FC<EventsPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
+  const { 
+    eventList, 
+    setEventImage, 
+    setEventField, 
+    imageDimensions,
+    setEventImageDimensions,
+    saveToLocalStorage 
+  } = useEventEdit();
 
   useEffect(() => {
     if (!isEditMode) {
@@ -90,10 +109,22 @@ const EventsPageInner: React.FC<EventsPageProps> = ({ isEditMode, selectedElemen
                 src={event.imageUrl}
                 alt={event.name}
                 isEditMode={isEditMode}
-                onResize={() => {}}
-                className="w-full h-[13rem] object-cover object-center rounded-lg overflow-hidden"
-                showChangeButton={false}
-                onImageChange={newUrl => setEventImage(event.id, newUrl)}
+                onResize={(width, height) => setEventImageDimensions(event.id, width, height)}
+                className={`object-cover object-center rounded-lg overflow-hidden ${!imageDimensions[event.id] ? 'w-full h-[13rem]' : ''}`}
+                style={{
+                  ...(imageDimensions[event.id]?.width ? { width: imageDimensions[event.id].width + 'px' } : {}),
+                  ...(imageDimensions[event.id]?.height ? { height: imageDimensions[event.id].height + 'px' } : {}),
+                }}
+                showChangeButton={true}
+                showMoveButton={false}
+                onImageChange={newUrl => {
+                  setEventImage(event.id, newUrl);
+                  // Force a re-render by updating the event list through the context
+                  const updatedEvents = eventList.map(ev => 
+                    ev.id === event.id ? { ...ev, imageUrl: newUrl } : ev
+                  );
+                  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedEvents));
+                }}
                 imgProps={{ ['data-event-id']: event.id } as any}
               />
               <div className="p-6">
@@ -144,7 +175,6 @@ const EventsPageInner: React.FC<EventsPageProps> = ({ isEditMode, selectedElemen
                     {event.attendees} attendees
                   </span>
                 </div>
-                {/* Place the anchor/button here */}
                 <a
                   href={event.link}
                   target="_blank"
@@ -175,4 +205,4 @@ const EventsPageInner: React.FC<EventsPageProps> = ({ isEditMode, selectedElemen
 };
 
 export { events };
-export default EventsPageInner;
+export default EventsPage;

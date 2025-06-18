@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Course } from '../types';
-import { BookOpen, Clock, User } from 'lucide-react';
+import { BookOpen, Clock, User, Camera } from 'lucide-react';
 import ResizableImage from '../components/ResizableImage';
 import { useLearningPageEdit, LearningPageEditProvider } from '../context/LearningPageEditContext';
 
@@ -75,8 +75,18 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
     setCourseImage,
     setCourseField,
     imageDimensions,
-    setCourseImageDimensions
+    setCourseImageDimensions,
+    saveToLocalStorage
   } = useLearningPageEdit();
+
+  useEffect(() => {
+    if (!isEditMode) {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      saveToLocalStorage();
+    }
+  }, [isEditMode, saveToLocalStorage]);
 
   useEffect(() => {
     // Expose setCourseField for EditModeControls
@@ -151,7 +161,8 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
                   ...(imageDimensions[course.id]?.width ? { width: imageDimensions[course.id].width + 'px' } : {}),
                   ...(imageDimensions[course.id]?.height ? { height: imageDimensions[course.id].height + 'px' } : {}),
                 }}
-                showChangeButton={false}
+                showChangeButton={true}
+                showMoveButton={false}
                 onImageChange={newUrl => setCourseImage(course.id, newUrl)}
                 imgProps={{ ['data-course-id']: course.id } as any}
               />
@@ -201,9 +212,9 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
                   data-course-id={course.id}
                   onClick={e => {
                     if (isEditMode) {
-                      e.preventDefault(); // Prevent navigation
-                      e.stopPropagation(); // Stop event propagation
-                      setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedElement(e.currentTarget);
                     }
                   }}
                 >

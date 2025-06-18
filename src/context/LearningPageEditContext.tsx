@@ -39,32 +39,23 @@ export const useLearningPageEdit = () => {
 
 export const LearningPageEditProvider: React.FC<{ children: React.ReactNode; initialContent: EditableContent }> = ({ children, initialContent }) => {
   const [editableContent, setEditableContent] = useState<EditableContent>(() => {
-    let parsedContent = initialContent; // Start with the provided initial content
-    const savedContent = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (savedContent) {
-      try {
-        const loadedContent = JSON.parse(savedContent);
-        // Merge loaded content with initial content. Prioritize loaded content for specific course fields.
-        parsedContent = {
-          ...initialContent,
-          courseContent: {
-            ...initialContent.courseContent,
-            ...loadedContent.courseContent, // Loaded courses override initial ones
-          }
-        };
-      } catch (e) {
-        console.error("Failed to parse saved learning page content, using initial content:", e);
-        // Fallback to initialContent if parsing fails
-        parsedContent = initialContent;
-      }
+    try {
+      const savedContent = localStorage.getItem(LOCAL_STORAGE_KEY);
+      return savedContent ? JSON.parse(savedContent) : initialContent;
+    } catch (e) {
+      console.error("Failed to parse saved learning page content, using initial content:", e);
+      return initialContent;
     }
-    console.log('LearningPageEditProvider - Initial parsedContent.courseContent:', parsedContent.courseContent); // Add this line for debugging
-    return parsedContent;
   });
 
   const [imageDimensions, setImageDimensionsState] = useState<Record<string, { width: number; height: number }>>(() => {
-    const savedDimensions = localStorage.getItem(IMAGE_DIMENSIONS_KEY);
-    return savedDimensions ? JSON.parse(savedDimensions) : {};
+    try {
+      const savedDimensions = localStorage.getItem(IMAGE_DIMENSIONS_KEY);
+      return savedDimensions ? JSON.parse(savedDimensions) : {};
+    } catch (e) {
+      console.error("Failed to parse saved image dimensions, using empty object:", e);
+      return {};
+    }
   });
 
   useEffect(() => {
@@ -94,6 +85,18 @@ export const LearningPageEditProvider: React.FC<{ children: React.ReactNode; ini
 
   const setCourseImage = (courseId: string, newUrl: string) => {
     setCourseContent(courseId, 'imageUrl', newUrl);
+    // Force a re-render by updating localStorage
+    const updatedContent = {
+      ...editableContent,
+      courseContent: {
+        ...editableContent.courseContent,
+        [courseId]: {
+          ...editableContent.courseContent[courseId],
+          imageUrl: newUrl
+        }
+      }
+    };
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedContent));
   };
 
   const setCourseImageDimensions = (id: string, width: number, height: number) => {

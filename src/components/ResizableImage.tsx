@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Move, Camera } from 'lucide-react';
 
 interface ResizableImageProps {
@@ -45,6 +45,10 @@ const ResizableImage: React.FC<ResizableImageProps> = ({
   const [dragStartY, setDragStartY] = useState(0);
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout>();
+  const lastResizeRef = useRef<{ width: number; height: number } | null>(null);
+  const requestAnimationFrameRef = useRef<number>();
+  const isResizingRef = useRef(false);
 
   // Add handle types for all 8 directions
   type HandleType = 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -85,14 +89,43 @@ const ResizableImage: React.FC<ResizableImageProps> = ({
     if (!isEditMode) {
       setIsResizing(false);
       setIsDragging(false);
+      isResizingRef.current = false;
     }
   }, [isEditMode]);
+
+  // Debounced resize handler with RAF
+  const debouncedResize = useCallback((width: number, height: number) => {
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+    }
+
+    // Only trigger resize if dimensions have changed significantly
+    if (!lastResizeRef.current || 
+        Math.abs(lastResizeRef.current.width - width) > 5 || 
+        Math.abs(lastResizeRef.current.height - height) > 5) {
+      
+      // Use requestAnimationFrame for smoother updates
+      if (requestAnimationFrameRef.current) {
+        cancelAnimationFrame(requestAnimationFrameRef.current);
+      }
+
+      requestAnimationFrameRef.current = requestAnimationFrame(() => {
+        resizeTimeoutRef.current = setTimeout(() => {
+          if (isResizingRef.current) {
+            onResize(width, height);
+            lastResizeRef.current = { width, height };
+          }
+        }, 150); // Increased debounce time to 150ms
+      });
+    }
+  }, [onResize]);
 
   // Generalized mouse down for any handle
   const handleResizeMouseDown = (type: HandleType) => (e: React.MouseEvent) => {
     if (!isEditMode) return;
     e.stopPropagation();
     setIsResizing(true);
+    isResizingRef.current = true;
     setActiveHandle(type);
     setStartX(e.clientX);
     setStartY(e.clientY);
@@ -114,71 +147,111 @@ const ResizableImage: React.FC<ResizableImageProps> = ({
     setDragStartY(e.clientY - position.y);
   };
 
-  // Enhanced mouse move for all handles
+  // Enhanced mouse move with RAF for smoother updates
   const handleMouseMove = (e: MouseEvent) => {
     if (isResizing && imageRef.current && activeHandle) {
-      let newWidth = startWidth;
-      let newHeight = startHeight;
-      let newX = position.x;
-      let newY = position.y;
-      const minSize = 50;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      switch (activeHandle) {
-        case 'right':
-          newWidth = Math.max(minSize, startWidth + dx);
-          break;
-        case 'left':
-          newWidth = Math.max(minSize, startWidth - dx);
-          newX = position.x + dx;
-          break;
-        case 'bottom':
-          newHeight = Math.max(minSize, startHeight + dy);
-          break;
-        case 'top':
-          newHeight = Math.max(minSize, startHeight - dy);
-          newY = position.y + dy;
-          break;
-        case 'top-left':
-          newWidth = Math.max(minSize, startWidth - dx);
-          newX = position.x + dx;
-          newHeight = Math.max(minSize, startHeight - dy);
-          newY = position.y + dy;
-          break;
-        case 'top-right':
-          newWidth = Math.max(minSize, startWidth + dx);
-          newHeight = Math.max(minSize, startHeight - dy);
-          newY = position.y + dy;
-          break;
-        case 'bottom-left':
-          newWidth = Math.max(minSize, startWidth - dx);
-          newX = position.x + dx;
-          newHeight = Math.max(minSize, startHeight + dy);
-          break;
-        case 'bottom-right':
-          newWidth = Math.max(minSize, startWidth + dx);
-          newHeight = Math.max(minSize, startHeight + dy);
-          break;
+      if (requestAnimationFrameRef.current) {
+        cancelAnimationFrame(requestAnimationFrameRef.current);
       }
-      imageRef.current.style.width = `${newWidth}px`;
-      imageRef.current.style.height = `${newHeight}px`;
-      setPosition({ x: newX, y: newY });
-      if (onPositionChange) onPositionChange(newX, newY);
+
+      requestAnimationFrameRef.current = requestAnimationFrame(() => {
+        const image = imageRef.current;
+        if (!image) return;
+
+        let newWidth = startWidth;
+        let newHeight = startHeight;
+        let newX = position.x;
+        let newY = position.y;
+        const minSize = 50;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        // Calculate new dimensions based on handle type
+        switch (activeHandle) {
+          case 'right':
+            newWidth = Math.max(minSize, startWidth + dx);
+            break;
+          case 'left':
+            newWidth = Math.max(minSize, startWidth - dx);
+            newX = position.x + dx;
+            break;
+          case 'bottom':
+            newHeight = Math.max(minSize, startHeight + dy);
+            break;
+          case 'top':
+            newHeight = Math.max(minSize, startHeight - dy);
+            newY = position.y + dy;
+            break;
+          case 'top-left':
+            newWidth = Math.max(minSize, startWidth - dx);
+            newX = position.x + dx;
+            newHeight = Math.max(minSize, startHeight - dy);
+            newY = position.y + dy;
+            break;
+          case 'top-right':
+            newWidth = Math.max(minSize, startWidth + dx);
+            newHeight = Math.max(minSize, startHeight - dy);
+            newY = position.y + dy;
+            break;
+          case 'bottom-left':
+            newWidth = Math.max(minSize, startWidth - dx);
+            newX = position.x + dx;
+            newHeight = Math.max(minSize, startHeight + dy);
+            break;
+          case 'bottom-right':
+            newWidth = Math.max(minSize, startWidth + dx);
+            newHeight = Math.max(minSize, startHeight + dy);
+            break;
+        }
+
+        // Apply new dimensions directly to the image element with transform for better performance
+        image.style.transform = `translate(${newX}px, ${newY}px)`;
+        image.style.width = `${newWidth}px`;
+        image.style.height = `${newHeight}px`;
+        image.style.willChange = 'transform, width, height';
+        
+        setPosition({ x: newX, y: newY });
+        if (onPositionChange) onPositionChange(newX, newY);
+
+        // Debounce the resize callback
+        debouncedResize(newWidth, newHeight);
+      });
     } else if (isDragging && containerRef.current) {
-      const newX = e.clientX - dragStartX;
-      const newY = e.clientY - dragStartY;
-      setPosition({ x: newX, y: newY });
-      if (onPositionChange) {
-        onPositionChange(newX, newY);
+      if (requestAnimationFrameRef.current) {
+        cancelAnimationFrame(requestAnimationFrameRef.current);
       }
+
+      requestAnimationFrameRef.current = requestAnimationFrame(() => {
+        const newX = e.clientX - dragStartX;
+        const newY = e.clientY - dragStartY;
+        if (imageRef.current) {
+          imageRef.current.style.transform = `translate(${newX}px, ${newY}px)`;
+          imageRef.current.style.willChange = 'transform';
+        }
+        setPosition({ x: newX, y: newY });
+        if (onPositionChange) {
+          onPositionChange(newX, newY);
+        }
+      });
     }
   };
 
-  // Enhanced mouse up
+  // Enhanced mouse up with cleanup
   const handleMouseUp = () => {
     if (isResizing && imageRef.current) {
       setIsResizing(false);
+      isResizingRef.current = false;
       setActiveHandle(null);
+      
+      // Clear any pending resize timeout and animation frame
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      if (requestAnimationFrameRef.current) {
+        cancelAnimationFrame(requestAnimationFrameRef.current);
+      }
+      
+      // Ensure final dimensions are saved
       onResize(
         imageRef.current.offsetWidth,
         imageRef.current.offsetHeight
@@ -187,6 +260,18 @@ const ResizableImage: React.FC<ResizableImageProps> = ({
       setIsDragging(false);
     }
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      if (requestAnimationFrameRef.current) {
+        cancelAnimationFrame(requestAnimationFrameRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (isResizing || isDragging) {
@@ -219,7 +304,7 @@ const ResizableImage: React.FC<ResizableImageProps> = ({
         ref={imageRef}
         src={src}
         alt={alt}
-        className={`${className} ${isEditMode ? 'cursor-move' : ''}`}
+        className={`${className} ${(isEditMode && showMoveButton) ? 'cursor-move' : ''}`}
         style={{
           ...style,
           resize: isEditMode ? 'both' : 'none',
@@ -227,7 +312,8 @@ const ResizableImage: React.FC<ResizableImageProps> = ({
           minHeight: '50px',
           transformOrigin: 'center center',
         }}
-        onMouseDown={handleDragStart}
+        onMouseDown={showMoveButton && isEditMode ? handleDragStart : undefined}
+        onDragStart={isEditMode ? (e) => e.preventDefault() : undefined}
         {...(imgProps as any)}
       />
       {isEditMode && (
@@ -255,6 +341,33 @@ const ResizableImage: React.FC<ResizableImageProps> = ({
                 title="Reposition Image"
               >
                 <Move className="w-4 h-4" />
+              </button>
+            )}
+            {showChangeButton && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (event) => {
+                    const file = (event.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (e) => {
+                        const result = e.target?.result;
+                        if (typeof result === 'string' && onImageChange) {
+                          onImageChange(result);
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  };
+                  input.click();
+                }}
+                className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+              >
+                <Camera className="w-4 h-4 text-gray-600" />
               </button>
             )}
           </div>

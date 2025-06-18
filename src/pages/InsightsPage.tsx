@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { Article } from '../types';
-import { BookMarked, Clock, User } from 'lucide-react';
+import { BookMarked, Clock, User, Camera } from 'lucide-react';
 import ResizableImage from '../components/ResizableImage';
-import { useInsightsPageEdit } from '../context/InsightsPageEditContext';
+import { useInsightsPageEdit, InsightsPageEditProvider } from '../context/InsightsPageEditContext';
 
 export const articles: Article[] = [
   {
@@ -41,13 +41,52 @@ interface InsightsPageProps {
 }
 
 const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
+  // Create initial content from articles
+  const initialContent = {
+    articleContent: Object.fromEntries(
+      articles.map(article => [
+        article.id,
+        {
+          title: article.title,
+          description: article.description,
+          date: article.date,
+          author: article.author,
+          imageUrl: article.imageUrl,
+          link: article.link
+        }
+      ])
+    )
+  };
+
+  return (
+    <InsightsPageEditProvider initialContent={initialContent}>
+      <InsightsPageContent
+        isEditMode={isEditMode}
+        selectedElement={selectedElement}
+        setSelectedElement={setSelectedElement}
+      />
+    </InsightsPageEditProvider>
+  );
+};
+
+const InsightsPageContent: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
   const {
     articleList,
     setArticleImage,
     setArticleField,
     imageDimensions,
-    setArticleImageDimensions
+    setArticleImageDimensions,
+    saveToLocalStorage
   } = useInsightsPageEdit();
+
+  useEffect(() => {
+    if (!isEditMode) {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      saveToLocalStorage();
+    }
+  }, [isEditMode, saveToLocalStorage]);
 
   useEffect(() => {
     // Expose setArticleField for EditModeControls
@@ -118,6 +157,10 @@ const InsightsPage: React.FC<InsightsPageProps> = ({ isEditMode, selectedElement
                   ...(imageDimensions[article.id]?.width ? { width: imageDimensions[article.id].width + 'px' } : {}),
                   ...(imageDimensions[article.id]?.height ? { height: imageDimensions[article.id].height + 'px' } : {}),
                 }}
+                showChangeButton={true}
+                showMoveButton={false}
+                onImageChange={newUrl => setArticleImage(article.id, newUrl)}
+                imgProps={{ ['data-article-id']: article.id } as any}
               />
               <div className="p-6">
                 <h3

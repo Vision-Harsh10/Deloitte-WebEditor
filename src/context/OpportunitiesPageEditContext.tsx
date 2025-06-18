@@ -3,12 +3,15 @@ import type { Opportunity } from '../types';
 import { opportunities } from '../pages/OpportunitiesPage';
 
 const LOCAL_STORAGE_KEY = 'opportunitiesPageOpportunities';
+const IMAGE_DIMENSIONS_KEY = 'opportunitiesPageImageDimensions';
 
 interface OpportunitiesPageEditContextType {
   opportunityList: Opportunity[];
   setOpportunityImage: (opportunityId: string, newUrl: string) => void;
   setOpportunityField: (opportunityId: string, field: keyof Opportunity, value: string | number | string[]) => void;
   saveToLocalStorage: () => void;
+  imageDimensions: Record<string, { width: number; height: number }>;
+  setOpportunityImageDimensions: (opportunityId: string, width: number, height: number) => void;
 }
 
 const OpportunitiesPageEditContext = createContext<OpportunitiesPageEditContextType | undefined>(undefined);
@@ -29,9 +32,22 @@ export const OpportunitiesPageEditProvider: React.FC<{ children: React.ReactNode
     }
   });
 
+  const [imageDimensions, setImageDimensions] = useState<Record<string, { width: number; height: number }>>(() => {
+    try {
+      const saved = localStorage.getItem(IMAGE_DIMENSIONS_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(opportunityList));
   }, [opportunityList]);
+
+  useEffect(() => {
+    localStorage.setItem(IMAGE_DIMENSIONS_KEY, JSON.stringify(imageDimensions));
+  }, [imageDimensions]);
 
   const setOpportunityImage = (opportunityId: string, newUrl: string) => {
     setOpportunityList(prev => prev.map(opportunity => 
@@ -52,8 +68,16 @@ export const OpportunitiesPageEditProvider: React.FC<{ children: React.ReactNode
     });
   };
 
+  const setOpportunityImageDimensions = (opportunityId: string, width: number, height: number) => {
+    setImageDimensions(prev => ({
+      ...prev,
+      [opportunityId]: { width, height }
+    }));
+  };
+
   const saveToLocalStorage = () => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(opportunityList));
+    localStorage.setItem(IMAGE_DIMENSIONS_KEY, JSON.stringify(imageDimensions));
   };
 
   return (
@@ -61,7 +85,9 @@ export const OpportunitiesPageEditProvider: React.FC<{ children: React.ReactNode
       opportunityList, 
       setOpportunityImage, 
       setOpportunityField, 
-      saveToLocalStorage 
+      saveToLocalStorage,
+      imageDimensions,
+      setOpportunityImageDimensions
     }}>
       {children}
     </OpportunitiesPageEditContext.Provider>

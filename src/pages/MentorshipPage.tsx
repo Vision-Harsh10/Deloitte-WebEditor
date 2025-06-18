@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Mentor } from '../types';
-import { Users, Star } from 'lucide-react';
+import { Users, Star, Camera } from 'lucide-react';
 import ResizableImage from '../components/ResizableImage';
 import { useMentorshipPageEdit } from '../context/MentorshipPageEditContext';
 
@@ -62,6 +62,17 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
       updatedExpertise[index] = newSkill;
       setMentorField(mentorId, 'expertise', updatedExpertise);
     }
+  };
+
+  // Handler for uploading a new mentor image
+  const handleMentorImageUpload = (mentorId: string, file: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setMentorImage(mentorId, result);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -203,7 +214,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {mentorList.map((mentor) => (
             <div key={mentor.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="relative w-full h-48">
+              <div className="relative w-full h-48 flex items-center justify-center">
                 {/* Blurred Background */}
                 <div
                   className="absolute inset-0 w-full h-full bg-cover bg-center filter blur-md"
@@ -212,18 +223,28 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                   }}
                 ></div>
 
-                {/* Centered Image */}
-                <div className="relative flex items-center justify-center w-full h-full">
-                  <ResizableImage
-                    src={mentor.imageUrl}
-                    alt={mentor.name}
-                    isEditMode={isEditMode}
-                    onResize={(width, height) => setMentorImage(mentor.id, width.toString())}
-                    className="w-44 h-44 rounded-full object-cover"
-                    // Removed inline style for dimensions, will be handled by ResizableImage internally if needed or via global styles
-                    showChangeButton={true}
-                  />
-                </div>
+                {/* Centered Circular Profile Image */}
+                <ResizableImage
+                  src={mentor.imageUrl}
+                  alt={mentor.name}
+                  isEditMode={false}
+                  onResize={(width, height) => setMentorImage(mentor.id, width.toString())}
+                  className="w-44 h-44 rounded-full object-cover z-10"
+                  showChangeButton={false}
+                  showMoveButton={false}
+                />
+                {isEditMode && (
+                  <label htmlFor={`upload-mentor-image-${mentor.id}`} className="absolute bottom-2 right-2 z-20 cursor-pointer bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors">
+                    <Camera className="w-5 h-5 text-gray-700" />
+                    <input
+                      id={`upload-mentor-image-${mentor.id}`}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => handleMentorImageUpload(mentor.id, e.target.files?.[0] || null)}
+                    />
+                  </label>
+                )}
               </div>
               <div className="p-6">
                 <h3
