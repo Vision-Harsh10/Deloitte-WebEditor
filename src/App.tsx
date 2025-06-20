@@ -487,7 +487,7 @@ function App() {
         <div className="min-h-screen flex flex-col">
           {isEditMode && (
             <>
-              <div className="fixed top-4 left-4 bg-blue-500 text-white px-4 py-2 rounded z-50">
+              <div className="fixed top-4 left-4 bg-blue-500 text-white my-40 px-4 py-2 rounded z-50">
                 Edit Mode Active - Click any element to edit
               </div>
               <EditModeControls

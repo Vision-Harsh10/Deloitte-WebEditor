@@ -40,8 +40,31 @@ interface MentorshipPageProps {
   setSelectedElement: (el: HTMLElement | null) => void;
 }
 
+const MENTORSHIP_BTN_LABELS_KEY = 'mentorshipBtnLabels';
+
+function getInitialMentorshipBtnLabels(mentors: Mentor[]) {
+  const saved = localStorage.getItem(MENTORSHIP_BTN_LABELS_KEY);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      // fallback to default
+    }
+  }
+  // Default: all mentors get 'Connect with Mentor'
+  const obj: Record<string, string> = {};
+  mentors.forEach(m => { obj[m.id] = 'Connect with Mentor'; });
+  return obj;
+}
+
 const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
   const { mentorList, setMentorImage, setMentorField } = useMentorshipPageEdit();
+
+  const [mentorshipBtnLabels, setMentorshipBtnLabels] = useState<Record<string, string>>(() => getInitialMentorshipBtnLabels(mentors));
+
+  useEffect(() => {
+    localStorage.setItem(MENTORSHIP_BTN_LABELS_KEY, JSON.stringify(mentorshipBtnLabels));
+  }, [mentorshipBtnLabels]);
 
   useEffect(() => {
     // Expose setMentorField for EditModeControls
@@ -75,10 +98,39 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
     reader.readAsDataURL(file);
   };
 
+  // Utility to get persisted text style for a tag and text
+  function getPersistedTextStyle(tag: string, text?: string) {
+    text = text || '';
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      hash |= 0;
+    }
+    const styleKey = `textStyle:${tag}:hash${hash}`;
+    const colorKey = `textColor:${tag}:hash${hash}`;
+    let styleObj: Record<string, any> = {};
+    try {
+      styleObj = JSON.parse(localStorage.getItem(styleKey) || '{}');
+    } catch {}
+    const color = localStorage.getItem(colorKey);
+    if (color) {
+      styleObj.color = color;
+    }
+    return styleObj;
+  }
+
   return (
-    <div className="bg-gray-100 min-h-screen">
+    <div
+      className="min-h-screen"
+      data-home-section-id="mentorship-page"
+      style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:mentorship-page') || '#f3f4f6' }}
+    >
       {/* Hero Section */}
-      <div className="bg-[#000000] text-white py-16">
+      <div
+        className="text-white py-16"
+        data-home-section-id="mentorship-hero"
+        style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:mentorship-hero') || '#000000' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1
             className="text-4xl font-bold mb-4 text-[#ffffff] outline-none"
@@ -86,6 +138,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setMentorField('hero-title', 'name' as keyof Mentor, e.currentTarget.textContent || 'Connect with Deloitte Experts')}
+            style={getPersistedTextStyle('h1', getMentorData('hero-title')?.name || 'Connect with Deloitte Experts')}
           >
             {getMentorData('hero-title')?.name || 'Connect with Deloitte Experts'}
           </h1>
@@ -95,6 +148,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setMentorField('hero-description', 'description' as keyof Mentor, e.currentTarget.textContent || 'Learn from industry leaders and accelerate your growth')}
+            style={getPersistedTextStyle('p', getMentorData('hero-description')?.description || 'Learn from industry leaders and accelerate your growth')}
           >
             {getMentorData('hero-description')?.description || 'Learn from industry leaders and accelerate your growth'}
           </p>
@@ -103,7 +157,11 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
 
       {/* Mentorship Program Overview */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-[#000000] rounded-lg shadow-lg p-8 mb-12">
+        <div
+          className="rounded-lg shadow-lg p-8 mb-12"
+          data-mentorship-section-id="program-overview"
+          style={{ backgroundColor: localStorage.getItem('mentorshipSectionBgColor:program-overview') || '#000000' }}
+        >
           <div className="flex items-center mb-6">
             <Star className="w-8 h-8 text-white mr-3" />
             <h2
@@ -112,6 +170,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
               suppressContentEditableWarning
               onClick={e => setSelectedElement(e.currentTarget)}
               onBlur={e => setMentorField('program-title', 'name' as keyof Mentor, e.currentTarget.textContent || 'Mentorship Program')}
+              style={getPersistedTextStyle('h2', getMentorData('program-title')?.name || 'Mentorship Program')}
             >
               {getMentorData('program-title')?.name || 'Mentorship Program'}
             </h2>
@@ -122,13 +181,15 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setMentorField('program-description', 'description' as keyof Mentor, e.currentTarget.textContent || 'Connect with Delloite experts who can guide you through your technical journey. Our mentors are industry professionals with extensive experience in various domains of technology.')}
+            style={getPersistedTextStyle('p', getMentorData('program-description')?.description || 'Connect with Delloite experts who can guide you through your technical journey. Our mentors are industry professionals with extensive experience in various domains of technology.')}
           >
             {getMentorData('program-description')?.description || 'Connect with Delloite experts who can guide you through your technical journey. Our mentors are industry professionals with extensive experience in various domains of technology.'}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div 
+            <div
               className="p-4 rounded-lg transition-all duration-300 hover:shadow-xl"
-              style={{ backgroundColor:'#86bc25', '--hover-color': '#9ed12f' } as React.CSSProperties}
+              data-mentorship-feature-id="feature-1"
+              style={{ backgroundColor: localStorage.getItem('mentorshipFeatureBgColor:feature-1') || '#86bc25', '--hover-color': '#9ed12f' } as React.CSSProperties}
             >
               <h3
                 className="font-semibold mb-2 text-[#000] outline-none"
@@ -136,6 +197,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
                 onBlur={e => setMentorField('feature-1-title', 'name' as keyof Mentor, e.currentTarget.textContent || '1:1 Guidance')}
+                style={getPersistedTextStyle('h3', getMentorData('feature-1-title')?.name || '1:1 Guidance')}
               >
                 {getMentorData('feature-1-title')?.name || '1:1 Guidance'}
               </h3>
@@ -145,13 +207,15 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
                 onBlur={e => setMentorField('feature-1-description', 'description' as keyof Mentor, e.currentTarget.textContent || 'Personalized mentoring sessions with experts')}
+                style={getPersistedTextStyle('p', getMentorData('feature-1-description')?.description || 'Personalized mentoring sessions with experts')}
               >
                 {getMentorData('feature-1-description')?.description || 'Personalized mentoring sessions with experts'}
               </p>
             </div>
-            <div 
+            <div
               className="p-4 rounded-lg transition-all duration-300 hover:shadow-xl"
-              style={{ backgroundColor: '#86bc25', '--hover-color': '#9ed12f' } as React.CSSProperties}
+              data-mentorship-feature-id="feature-2"
+              style={{ backgroundColor: localStorage.getItem('mentorshipFeatureBgColor:feature-2') || '#86bc25', '--hover-color': '#9ed12f' } as React.CSSProperties}
             >
               <h3
                 className="font-semibold mb-2 text-[#000] outline-none"
@@ -159,6 +223,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
                 onBlur={e => setMentorField('feature-2-title', 'name' as keyof Mentor, e.currentTarget.textContent || 'Career Support')}
+                style={getPersistedTextStyle('h3', getMentorData('feature-2-title')?.name || 'Career Support')}
               >
                 {getMentorData('feature-2-title')?.name || 'Career Support'}
               </h3>
@@ -168,13 +233,15 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
                 onBlur={e => setMentorField('feature-2-description', 'description' as keyof Mentor, e.currentTarget.textContent || 'Get insights for career growth and development')}
+                style={getPersistedTextStyle('p', getMentorData('feature-2-description')?.description || 'Get insights for career growth and development')}
               >
                 {getMentorData('feature-2-description')?.description || 'Get insights for career growth and development'}
               </p>
             </div>
-            <div 
+            <div
               className="p-4 rounded-lg transition-all duration-300 hover:shadow-xl"
-              style={{ backgroundColor: '#86bc25', '--hover-color': '#9ed12f' } as React.CSSProperties}
+              data-mentorship-feature-id="feature-3"
+              style={{ backgroundColor: localStorage.getItem('mentorshipFeatureBgColor:feature-3') || '#86bc25', '--hover-color': '#9ed12f' } as React.CSSProperties}
             >
               <h3
                 className="font-semibold mb-2 text-[#000] outline-none"
@@ -182,6 +249,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
                 onBlur={e => setMentorField('feature-3-title', 'name' as keyof Mentor, e.currentTarget.textContent || 'Technical Excellence')}
+                style={getPersistedTextStyle('h3', getMentorData('feature-3-title')?.name || 'Technical Excellence')}
               >
                 {getMentorData('feature-3-title')?.name || 'Technical Excellence'}
               </h3>
@@ -191,6 +259,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                 suppressContentEditableWarning
                 onClick={e => setSelectedElement(e.currentTarget)}
                 onBlur={e => setMentorField('feature-3-description', 'description' as keyof Mentor, e.currentTarget.textContent || 'Learn best practices and industry standards')}
+                style={getPersistedTextStyle('p', getMentorData('feature-3-description')?.description || 'Learn best practices and industry standards')}
               >
                 {getMentorData('feature-3-description')?.description || 'Learn best practices and industry standards'}
               </p>
@@ -207,6 +276,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setMentorField('mentors-title', 'name' as keyof Mentor, e.currentTarget.textContent || 'Our Mentors')}
+            style={getPersistedTextStyle('h2', getMentorData('mentors-title')?.name || 'Our Mentors')}
           >
             {getMentorData('mentors-title')?.name || 'Our Mentors'}
           </h2>
@@ -253,6 +323,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                   suppressContentEditableWarning
                   onClick={e => setSelectedElement(e.currentTarget)}
                   onBlur={e => setMentorField(mentor.id, 'name', e.currentTarget.textContent || mentor.name)}
+                  style={getPersistedTextStyle('h3', mentor.name)}
                 >
                   {mentor.name}
                 </h3>
@@ -262,6 +333,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                   suppressContentEditableWarning
                   onClick={e => setSelectedElement(e.currentTarget)}
                   onBlur={e => setMentorField(mentor.id, 'title', e.currentTarget.textContent || mentor.title)}
+                  style={getPersistedTextStyle('p', mentor.title)}
                 >
                   {mentor.title}
                 </p>
@@ -274,6 +346,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                       suppressContentEditableWarning
                       onClick={e => setSelectedElement(e.currentTarget)}
                       onBlur={e => handleExpertiseChange(mentor.id, index, e.currentTarget.textContent || skill)}
+                      style={getPersistedTextStyle('span', skill)}
                     >
                       {skill}
                     </span>
@@ -285,6 +358,7 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                   suppressContentEditableWarning
                   onClick={e => setSelectedElement(e.currentTarget)}
                   onBlur={e => setMentorField(mentor.id, 'description', e.currentTarget.textContent || mentor.description)}
+                  style={getPersistedTextStyle('p', mentor.description)}
                 >
                   {mentor.description}
                 </p>
@@ -293,17 +367,37 @@ const MentorshipPage: React.FC<MentorshipPageProps> = ({ isEditMode, selectedEle
                   target="_blank"
                   rel="noopener noreferrer"
                   data-mentor-id={mentor.id}
+                  data-mentorship-btn={mentor.id}
                   onClick={e => {
                     if (isEditMode) {
-                      e.preventDefault(); // Prevent navigation
-                      e.stopPropagation(); // Stop event propagation
-                      setSelectedElement(e.currentTarget); // Select the <a> tag directly
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedElement(e.currentTarget);
                     }
                   }}
+                  className={`w-full border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors text-center block bg-white text-[#1783b0] hover:bg-[#1783b0] hover:text-white${localStorage.getItem('mentorshipBtnHoverColor:' + mentor.id) || localStorage.getItem('mentorshipBtnHoverTextColor:' + mentor.id) ? ' custom-hover' : ''}`}
+                  style={{
+                    backgroundColor: localStorage.getItem('mentorshipBtnBgColor:' + mentor.id) || undefined,
+                    color: localStorage.getItem('mentorshipBtnTextColor:' + mentor.id) || undefined,
+                    '--hover-color': localStorage.getItem('mentorshipBtnHoverColor:' + mentor.id) || undefined,
+                    '--hover-text-color': localStorage.getItem('mentorshipBtnHoverTextColor:' + mentor.id) || undefined
+                  } as React.CSSProperties}
                 >
-                  <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
-                    Connect with Mentor
-                  </button>
+                  {isEditMode ? (
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={e => {
+                        const value = (e.currentTarget && e.currentTarget.textContent) ? e.currentTarget.textContent : 'Connect with Mentor';
+                        setMentorshipBtnLabels(prev => ({ ...prev, [mentor.id]: value }));
+                      }}
+                      style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                    >
+                      {mentorshipBtnLabels[mentor.id] || 'Connect with Mentor'}
+                    </span>
+                  ) : (
+                    mentorshipBtnLabels[mentor.id] || 'Connect with Mentor'
+                  )}
                 </a>
               </div>
             </div>

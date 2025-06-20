@@ -50,6 +50,22 @@ interface LeaderboardProps {
 
 const LEADERBOARD_STORAGE_KEY = 'leaderboardContent';
 const LEADERBOARD_IMAGE_DIMENSIONS_KEY = 'leaderboardImageDimensions';
+const LEADER_BTN_LABELS_KEY = 'leaderBtnLabels';
+
+function getInitialLeaderBtnLabels(leaders: Leader[]) {
+  const saved = localStorage.getItem(LEADER_BTN_LABELS_KEY);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      // fallback to default
+    }
+  }
+  // Default: all leaders get 'View Profile'
+  const obj: Record<string, string> = {};
+  leaders.forEach(l => { obj[l.id] = 'View Profile'; });
+  return obj;
+}
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElement }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -71,6 +87,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
     return saved ? JSON.parse(saved) : {};
   });
 
+  const [leaderBtnLabels, setLeaderBtnLabels] = useState<Record<string, string>>(() => getInitialLeaderBtnLabels(defaultLeaders));
+
   useEffect(() => {
     if (!isEditMode) {
       if (document.activeElement instanceof HTMLElement) {
@@ -84,6 +102,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
   useEffect(() => {
     localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(leaders));
   }, [leaders]);
+
+  // Persist leaderBtnLabels to localStorage
+  useEffect(() => {
+    localStorage.setItem(LEADER_BTN_LABELS_KEY, JSON.stringify(leaderBtnLabels));
+  }, [leaderBtnLabels]);
 
   const handleLeaderUpdate = (id: string, field: keyof Leader, value: string | number | string[]) => {
     setLeaders(prevLeaders => 
@@ -132,7 +155,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
 
   return (
     <>
-    <section className="py-16 bg-gray-200">
+    <section
+      className="py-16"
+      data-home-section-id="leaderboard"
+      style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:leaderboard') || '#e5e7eb' }}
+    >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center">
@@ -235,10 +262,31 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isEditMode, setSelectedElemen
                     {leader.points} Points
                   </span>
                 </div>
-                <a href={leader.link} target="_blank" rel="noopener noreferrer" data-leader-id={leader.id} onClick={e => { if (isEditMode) { e.preventDefault(); } }}>
-                    <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
-                        View Profile
-                    </button>
+                <a
+                  href={leader.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-leader-id={leader.id}
+                  onClick={e => { if (isEditMode) { e.preventDefault(); } }}
+                  className={`w-full bg-white border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block${localStorage.getItem('leaderboardItemHoverColor:' + leader.id) || localStorage.getItem('leaderboardItemHoverTextColor:' + leader.id) ? ' custom-hover' : ''}`}
+                  style={{
+                    color: localStorage.getItem('leaderboardItemTextColor:' + leader.id) || undefined,
+                    '--hover-color': localStorage.getItem('leaderboardItemHoverColor:' + leader.id) || undefined,
+                    '--hover-text-color': localStorage.getItem('leaderboardItemHoverTextColor:' + leader.id) || undefined
+                  } as React.CSSProperties}
+                >
+                  {isEditMode ? (
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={e => setLeaderBtnLabels(prev => ({ ...prev, [leader.id]: e.currentTarget.textContent || 'View Profile' }))}
+                      style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                    >
+                      {leaderBtnLabels[leader.id] || 'View Profile'}
+                    </span>
+                  ) : (
+                    leaderBtnLabels[leader.id] || 'View Profile'
+                  )}
                 </a>
               </div>
             ))}

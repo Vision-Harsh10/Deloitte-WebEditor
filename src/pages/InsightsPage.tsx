@@ -33,6 +33,7 @@ export const articles: Article[] = [
     link: 'https://www2.deloitte.com/us/en/insights/economy/us-economic-forecast/united-states-tariffs-analysis.html'
   }
 ];
+  
 
 interface InsightsPageProps {
   isEditMode: boolean;
@@ -74,6 +75,9 @@ const InsightsPageContent: React.FC<InsightsPageProps> = ({ isEditMode, selected
     articleList,
     setArticleImage,
     setArticleField,
+    setArticleButtonLabel,
+    subscribeBtnLabel,
+    setSubscribeBtnLabel,
     imageDimensions,
     setArticleImageDimensions,
     saveToLocalStorage
@@ -99,10 +103,39 @@ const InsightsPageContent: React.FC<InsightsPageProps> = ({ isEditMode, selected
     return articleList.find(a => a.id === articleId) || articles.find(a => a.id === articleId);
   };
 
+  // Utility to get persisted text style for a tag and text
+  function getPersistedTextStyle(tag: string, text?: string) {
+    text = text || '';
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      hash |= 0;
+    }
+    const styleKey = `textStyle:${tag}:hash${hash}`;
+    const colorKey = `textColor:${tag}:hash${hash}`;
+    let styleObj: Record<string, any> = {};
+    try {
+      styleObj = JSON.parse(localStorage.getItem(styleKey) || '{}');
+    } catch {}
+    const color = localStorage.getItem(colorKey);
+    if (color) {
+      styleObj.color = color;
+    }
+    return styleObj;
+  }
+
   return (
-    <div className='bg-gray-200'>
+    <div
+      className='min-h-screen'
+      data-home-section-id='insights-page'
+      style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:insights-page') || '#e5e7eb' }}
+    >
       {/* Hero Section */}
-      <div className="bg-[#000000] text-white py-16">
+      <div
+        className="text-white py-16"
+        data-home-section-id="insights-hero"
+        style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:insights-hero') || '#000000' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1
             className="text-4xl font-bold mb-4 text-[#ffffff] outline-none"
@@ -110,6 +143,7 @@ const InsightsPageContent: React.FC<InsightsPageProps> = ({ isEditMode, selected
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setArticleField('hero-title', 'title' as keyof Article, e.currentTarget.textContent || 'Explore Deloitte Insights')}
+            style={getPersistedTextStyle('h1', getArticleData('hero-title')?.title || 'Explore Deloitte Insights')}
           >
             {getArticleData('hero-title')?.title || 'Explore Deloitte Insights'}
           </h1>
@@ -119,6 +153,7 @@ const InsightsPageContent: React.FC<InsightsPageProps> = ({ isEditMode, selected
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setArticleField('hero-description', 'description' as keyof Article, e.currentTarget.textContent || 'Stay updated with the latest in technology and innovation')}
+            style={getPersistedTextStyle('p', getArticleData('hero-description')?.description || 'Stay updated with the latest in technology and innovation')}
           >
             {getArticleData('hero-description')?.description || 'Stay updated with the latest in technology and innovation'}
           </p>
@@ -135,98 +170,128 @@ const InsightsPageContent: React.FC<InsightsPageProps> = ({ isEditMode, selected
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setArticleField('articles-title', 'title' as keyof Article, e.currentTarget.textContent || 'Featured Articles')}
+            style={getPersistedTextStyle('h2', getArticleData('articles-title')?.title || 'Featured Articles')}
           >
             {getArticleData('articles-title')?.title || 'Featured Articles'}
           </h2>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {articleList.map((article) => (
-            <div 
-              key={article.id} 
-              className="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl"
-              style={{ '--hover-color': '#f8f9fa' } as React.CSSProperties}
-            >
-              <ResizableImage
-                src={article.imageUrl}
-                alt={article.title}
-                isEditMode={isEditMode}
-                onResize={(width, height) => setArticleImageDimensions(article.id, width, height)}
-                className={`object-cover ${!imageDimensions[article.id] ? 'w-full h-48' : ''}`}
-                style={{
-                  ...(imageDimensions[article.id]?.width ? { width: imageDimensions[article.id].width + 'px' } : {}),
-                  ...(imageDimensions[article.id]?.height ? { height: imageDimensions[article.id].height + 'px' } : {}),
-                }}
-                showChangeButton={true}
-                showMoveButton={false}
-                onImageChange={newUrl => setArticleImage(article.id, newUrl)}
-                imgProps={{ ['data-article-id']: article.id } as any}
-              />
-              <div className="p-6">
-                <h3
-                  className="text-xl font-semibold mb-2 text-[#2b333f] outline-none"
-                  contentEditable={isEditMode}
-                  suppressContentEditableWarning
-                  onClick={e => setSelectedElement(e.currentTarget)}
-                  onBlur={e => setArticleField(article.id, 'title', e.currentTarget.textContent || article.title)}
-                >
-                  {article.title}
-                </h3>
-                <p
-                  className="text-[#73859f] mb-4 outline-none"
-                  contentEditable={isEditMode}
-                  suppressContentEditableWarning
-                  onClick={e => setSelectedElement(e.currentTarget)}
-                  onBlur={e => setArticleField(article.id, 'description', e.currentTarget.textContent || article.description)}
-                >
-                  {article.description}
-                </p>
-                <div className="flex items-center justify-between text-[#303030] text-sm mb-4">
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span
-                      className="outline-none"
-                      contentEditable={isEditMode}
-                      suppressContentEditableWarning
-                      onClick={e => setSelectedElement(e.currentTarget)}
-                      onBlur={e => setArticleField(article.id, 'date', e.currentTarget.textContent || article.date)}
-                    >
-                      {article.date}
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <User className="w-4 h-4 mr-1" />
-                    <span
-                      className="outline-none"
-                      contentEditable={isEditMode}
-                      suppressContentEditableWarning
-                      onClick={e => setSelectedElement(e.currentTarget)}
-                      onBlur={e => setArticleField(article.id, 'author', e.currentTarget.textContent || article.author)}
-                    >
-                      {article.author}
-                    </span>
-                  </div>
-                </div>
-                <a
-                  href={article.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-article-id={article.id}
-                  onClick={e => {
-                    if (isEditMode) {
-                      e.preventDefault(); // Prevent navigation
-                      e.stopPropagation(); // Stop event propagation
-                      setSelectedElement(e.currentTarget); // Select the <a> tag directly
-                    }
+          {articleList
+            .filter(article => articles.some(a => a.id === article.id))
+            .map((article) => (
+              <div 
+                key={article.id} 
+                className="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl"
+                style={{ '--hover-color': '#f8f9fa' } as React.CSSProperties}
+              >
+                <ResizableImage
+                  src={article.imageUrl}
+                  alt={article.title}
+                  isEditMode={isEditMode}
+                  onResize={(width, height) => setArticleImageDimensions(article.id, width, height)}
+                  className={`object-cover ${!imageDimensions[article.id] ? 'w-full h-48' : ''}`}
+                  style={{
+                    minHeight: '12rem',
+                    ...(imageDimensions[article.id]?.width ? { width: imageDimensions[article.id].width + 'px' } : {}),
+                    ...(imageDimensions[article.id]?.height ? { height: imageDimensions[article.id].height + 'px' } : {}),
                   }}
-                >
-                  <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
-                    Read More
-                  </button>
-                </a>
+                  showChangeButton={true}
+                  showMoveButton={false}
+                  onImageChange={newUrl => setArticleImage(article.id, newUrl)}
+                  imgProps={{
+                    ['data-article-id']: article.id,
+                    onError: (e: React.SyntheticEvent<HTMLImageElement>) => {
+                      e.currentTarget.src = 'https://via.placeholder.com/400x192?text=No+Image';
+                    }
+                  } as any}
+                />
+                <div className="p-6">
+                  <h3
+                    className="text-xl font-semibold mb-2 text-[#2b333f] outline-none"
+                    contentEditable={isEditMode}
+                    suppressContentEditableWarning
+                    onClick={e => setSelectedElement(e.currentTarget)}
+                    onBlur={e => setArticleField(article.id, 'title', e.currentTarget.textContent || article.title)}
+                    style={getPersistedTextStyle('h3', article.title)}
+                  >
+                    {article.title}
+                  </h3>
+                  <p
+                    className="text-[#73859f] mb-4 outline-none"
+                    contentEditable={isEditMode}
+                    suppressContentEditableWarning
+                    onClick={e => setSelectedElement(e.currentTarget)}
+                    onBlur={e => setArticleField(article.id, 'description', e.currentTarget.textContent || article.description)}
+                    style={getPersistedTextStyle('p', article.description)}
+                  >
+                    {article.description}
+                  </p>
+                  <div className="flex items-center justify-between text-[#303030] text-sm mb-4">
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 mr-1" />
+                      <span
+                        className="outline-none"
+                        contentEditable={isEditMode}
+                        suppressContentEditableWarning
+                        onClick={e => setSelectedElement(e.currentTarget)}
+                        onBlur={e => setArticleField(article.id, 'date', e.currentTarget.textContent || article.date)}
+                        style={getPersistedTextStyle('span', article.date)}
+                      >
+                        {article.date}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <User className="w-4 h-4 mr-1" />
+                      <span
+                        className="outline-none"
+                        contentEditable={isEditMode}
+                        suppressContentEditableWarning
+                        onClick={e => setSelectedElement(e.currentTarget)}
+                        onBlur={e => setArticleField(article.id, 'author', e.currentTarget.textContent || article.author)}
+                        style={getPersistedTextStyle('span', article.author)}
+                      >
+                        {article.author}
+                      </span>
+                    </div>
+                  </div>
+                  <a
+                    href={article.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-article-id={article.id}
+                    data-insights-btn={article.id}
+                    onClick={e => {
+                      if (isEditMode) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedElement(e.currentTarget);
+                      }
+                    }}
+                    className={`w-full border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors text-center block bg-white text-[#1783b0] hover:bg-[#1783b0] hover:text-white${localStorage.getItem('insightsBtnHoverColor:' + article.id) || localStorage.getItem('insightsBtnHoverTextColor:' + article.id) ? ' custom-hover' : ''}`}
+                    style={{
+                      backgroundColor: localStorage.getItem('insightsBtnBgColor:' + article.id) || undefined,
+                      color: localStorage.getItem('insightsBtnTextColor:' + article.id) || undefined,
+                      '--hover-color': localStorage.getItem('insightsBtnHoverColor:' + article.id) || undefined,
+                      '--hover-text-color': localStorage.getItem('insightsBtnHoverTextColor:' + article.id) || undefined
+                    } as React.CSSProperties}
+                  >
+                    {isEditMode ? (
+                      <span
+                        contentEditable
+                        suppressContentEditableWarning
+                        onBlur={e => setArticleButtonLabel(article.id, e.currentTarget.textContent || 'Read More')}
+                        style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                      >
+                        {article.buttonLabel || 'Read More'}
+                      </span>
+                    ) : (
+                      article.buttonLabel || 'Read More'
+                    )}
+                  </a>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
 
         {/* Categories Section */}
@@ -237,84 +302,73 @@ const InsightsPageContent: React.FC<InsightsPageProps> = ({ isEditMode, selected
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setArticleField('categories-title', 'title' as keyof Article, e.currentTarget.textContent || 'Browse by Category')}
+            style={getPersistedTextStyle('h2', getArticleData('categories-title')?.title || 'Browse by Category')}
           >
             {getArticleData('categories-title')?.title || 'Browse by Category'}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div 
-              className="bg-white p-6 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl"
-              style={{ '--hover-color': '#f8f9fa' } as React.CSSProperties}
-            >
-              <h3
-                className="text-lg font-semibold mb-2 outline-none"
-                contentEditable={isEditMode}
-                suppressContentEditableWarning
-                onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => setArticleField('category-1-title', 'title' as keyof Article, e.currentTarget.textContent || 'Technology Trends')}
-              >
-                {getArticleData('category-1-title')?.title || 'Technology Trends'}
-              </h3>
-              <p
-                className="text-gray-600 outline-none"
-                contentEditable={isEditMode}
-                suppressContentEditableWarning
-                onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => setArticleField('category-1-description', 'description' as keyof Article, e.currentTarget.textContent || 'Latest developments in computing and technology')}
-              >
-                {getArticleData('category-1-description')?.description || 'Latest developments in computing and technology'}
-              </p>
-            </div>
-            <div 
-              className="bg-white p-6 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl"
-              style={{ '--hover-color': '#f8f9fa' } as React.CSSProperties}
-            >
-              <h3
-                className="text-lg font-semibold mb-2 outline-none"
-                contentEditable={isEditMode}
-                suppressContentEditableWarning
-                onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => setArticleField('category-2-title', 'title' as keyof Article, e.currentTarget.textContent || 'Research Papers')}
-              >
-                {getArticleData('category-2-title')?.title || 'Research Papers'}
-              </h3>
-              <p
-                className="text-gray-600 outline-none"
-                contentEditable={isEditMode}
-                suppressContentEditableWarning
-                onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => setArticleField('category-2-description', 'description' as keyof Article, e.currentTarget.textContent || 'Academic publications and research findings')}
-              >
-                {getArticleData('category-2-description')?.description || 'Academic publications and research findings'}
-              </p>
-            </div>
-            <div 
-              className="bg-white p-6 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl"
-              style={{ '--hover-color': '#f8f9fa' } as React.CSSProperties}
-            >
-              <h3
-                className="text-lg font-semibold mb-2 outline-none"
-                contentEditable={isEditMode}
-                suppressContentEditableWarning
-                onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => setArticleField('category-3-title', 'title' as keyof Article, e.currentTarget.textContent || 'Industry News')}
-              >
-                {getArticleData('category-3-title')?.title || 'Industry News'}
-              </h3>
-              <p
-                className="text-gray-600 outline-none"
-                contentEditable={isEditMode}
-                suppressContentEditableWarning
-                onClick={e => setSelectedElement(e.currentTarget)}
-                onBlur={e => setArticleField('category-3-description', 'description' as keyof Article, e.currentTarget.textContent || 'Updates from ServiceNow and the tech industry')}
-              >
-                {getArticleData('category-3-description')?.description || 'Updates from ServiceNow and the tech industry'}
-              </p>
-            </div>
-          </div>
+          {(() => {
+            const categories = [
+              {
+                id: 'category-1',
+                title: getArticleData('category-1-title')?.title || 'Technology Trends',
+                description: getArticleData('category-1-description')?.description || 'Latest developments in computing and technology',
+              },
+              {
+                id: 'category-2',
+                title: getArticleData('category-2-title')?.title || 'Research Papers',
+                description: getArticleData('category-2-description')?.description || 'Academic publications and research findings',
+              },
+              {
+                id: 'category-3',
+                title: getArticleData('category-3-title')?.title || 'Industry News',
+                description: getArticleData('category-3-description')?.description || 'Updates from ServiceNow and the tech industry',
+              },
+            ];
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {categories.map(cat => (
+                  <div
+                    key={cat.id}
+                    className="bg-white p-6 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl"
+                    data-insights-category-id={cat.id}
+                    style={{
+                      backgroundColor: localStorage.getItem('insightsCategoryBgColor:' + cat.id) || '#fff',
+                      '--hover-color': '#f8f9fa'
+                    } as React.CSSProperties}
+                  >
+                    <h3
+                      className="text-lg font-semibold mb-2 outline-none"
+                      contentEditable={isEditMode}
+                      suppressContentEditableWarning
+                      onClick={e => setSelectedElement(e.currentTarget)}
+                      onBlur={e => setArticleField(cat.id + '-title', 'title' as keyof Article, e.currentTarget.textContent || cat.title)}
+                      style={getPersistedTextStyle('h3', cat.title)}
+                    >
+                      {cat.title}
+                    </h3>
+                    <p
+                      className="text-gray-600 outline-none"
+                      contentEditable={isEditMode}
+                      suppressContentEditableWarning
+                      onClick={e => setSelectedElement(e.currentTarget)}
+                      onBlur={e => setArticleField(cat.id + '-description', 'description' as keyof Article, e.currentTarget.textContent || cat.description)}
+                      style={getPersistedTextStyle('p', cat.description)}
+                    >
+                      {cat.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Newsletter Subscription */}
-        <div className="mt-16 bg-[#000000] text-white rounded-lg p-8">
+        <div
+          className="mt-16 text-white rounded-lg p-8"
+          data-insights-section-id="newsletter"
+          style={{ backgroundColor: localStorage.getItem('insightsSectionBgColor:newsletter') || '#000000' }}
+        >
           <div className="max-w-2xl mx-auto text-center">
             <h2
               className="text-2xl font-bold mb-4 outline-none"
@@ -322,6 +376,7 @@ const InsightsPageContent: React.FC<InsightsPageProps> = ({ isEditMode, selected
               suppressContentEditableWarning
               onClick={e => setSelectedElement(e.currentTarget)}
               onBlur={e => setArticleField('newsletter-title', 'title' as keyof Article, e.currentTarget.textContent || 'Stay Updated')}
+              style={getPersistedTextStyle('h2', getArticleData('newsletter-title')?.title || 'Stay Updated')}
             >
               {getArticleData('newsletter-title')?.title || 'Stay Updated'}
             </h2>
@@ -331,6 +386,7 @@ const InsightsPageContent: React.FC<InsightsPageProps> = ({ isEditMode, selected
               suppressContentEditableWarning
               onClick={e => setSelectedElement(e.currentTarget)}
               onBlur={e => setArticleField('newsletter-description', 'description' as keyof Article, e.currentTarget.textContent || 'Subscribe to our newsletter for the latest insights and updates')}
+              style={getPersistedTextStyle('p', getArticleData('newsletter-description')?.description || 'Subscribe to our newsletter for the latest insights and updates')}
             >
               {getArticleData('newsletter-description')?.description || 'Subscribe to our newsletter for the latest insights and updates'}
             </p>
@@ -340,8 +396,35 @@ const InsightsPageContent: React.FC<InsightsPageProps> = ({ isEditMode, selected
                 placeholder="Enter your email"
                 className="px-4 py-2 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#000000] focus:border-transparent"
               />
-              <button className="bg-[#62d84e] text-[#032d42] px-6 py-2 rounded-lg font-semibold transition-colors hover:bg-[#9fe793] hover:text-black">
-                Subscribe
+              <button
+                className={`bg-[#62d84e] text-[#032d42] px-6 py-2 rounded-lg font-semibold transition-colors hover:bg-[#9fe793] hover:text-black${localStorage.getItem('insightsSubscribeBtnHoverColor') || localStorage.getItem('insightsSubscribeBtnHoverTextColor') ? ' custom-hover' : ''}`}
+                data-insights-subscribe-btn
+                style={{
+                  backgroundColor: localStorage.getItem('insightsSubscribeBtnBgColor') || undefined,
+                  color: localStorage.getItem('insightsSubscribeBtnTextColor') || undefined,
+                  '--hover-color': localStorage.getItem('insightsSubscribeBtnHoverColor') || undefined,
+                  '--hover-text-color': localStorage.getItem('insightsSubscribeBtnHoverTextColor') || undefined
+                } as React.CSSProperties}
+                onClick={e => {
+                  if (isEditMode) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedElement(e.currentTarget);
+                  }
+                }}
+              >
+                {isEditMode ? (
+                  <span
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={e => setSubscribeBtnLabel(e.currentTarget.textContent || 'Subscribe')}
+                    style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                  >
+                    {subscribeBtnLabel || 'Subscribe'}
+                  </span>
+                ) : (
+                  subscribeBtnLabel || 'Subscribe'
+                )}
               </button>
             </div>
           </div>

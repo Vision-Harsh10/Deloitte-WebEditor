@@ -198,7 +198,7 @@ interface HomePageProps {
   setSelectedElement: (el: HTMLElement | null) => void;
 }
 
-const initialContent = {
+const initialContent: EditableContent = {
   sectionTitles: {
     events: 'Featured Events',
     courses: 'Featured Courses',
@@ -207,6 +207,7 @@ const initialContent = {
     articles: 'Featured Articles',
   },
   mentorImages: mentors.reduce((acc, mentor) => { acc[mentor.id] = mentor.imageUrl; return acc; }, {} as Record<string, string>),
+  mentorButtonLabels: {},
   eventContent: featuredEvents.reduce((acc, event) => {
     acc[event.id] = {
       name: event.name,
@@ -250,6 +251,26 @@ const initialContent = {
   }, {} as Record<string, any>),
 };
 
+// Utility to get persisted text style for a tag and text
+function getPersistedTextStyle(tag: string, text: string) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
+  const styleKey = `textStyle:${tag}:hash${hash}`;
+  const colorKey = `textColor:${tag}:hash${hash}`;
+  let styleObj: Record<string, any> = {};
+  try {
+    styleObj = JSON.parse(localStorage.getItem(styleKey) || '{}');
+  } catch {}
+  const color = localStorage.getItem(colorKey);
+  if (color) {
+    styleObj.color = color;
+  }
+  return styleObj;
+}
+
 const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
   const {
     editableContent,
@@ -268,6 +289,8 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
     setOpportunityField,
     setArticleField,
     setEditableContent,
+    setButtonLabel,
+    setMentorButtonLabel,
   } = useHomePageEdit();
 
   // Save to localStorage on exit edit mode
@@ -382,7 +405,11 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
         <Leaderboard isEditMode={isEditMode} setSelectedElement={setSelectedElement} />
         
         {/* Featured Events Section */}
-        <section className="py-16 bg-[#ffffff]">
+        <section
+          className="py-16"
+          data-home-section-id="events"
+          style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:events') || '#ffffff' }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center">
@@ -394,11 +421,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                     suppressContentEditableWarning
                     onBlur={e => setSectionTitle('events', e.currentTarget.textContent || '')}
                     onClick={e => setSelectedElement(e.currentTarget)}
+                    style={getPersistedTextStyle('h2', editableContent.sectionTitles.events)}
                   >
                     {editableContent.sectionTitles.events}
                   </h2>
                 ) : (
-                  <h2 className="text-2xl font-bold text-[#000]">{editableContent.sectionTitles.events}</h2>
+                  <h2 className="text-2xl font-bold text-[#000]" style={getPersistedTextStyle('h2', editableContent.sectionTitles.events)}>{editableContent.sectionTitles.events}</h2>
                 )}
               </div>
               <Link to="/events" className="text-[#2b333f] font-semibold flex items-center group hover:underline hover:decoration-[#00718f] hover:underline-offset-4 hover:decoration-2">
@@ -448,11 +476,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         suppressContentEditableWarning
                         onBlur={e => setEventField(event.id, 'name', e.currentTarget.textContent || '')}
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('h3', editableContent.eventContent[event.id]?.name || event.name)}
                       >
                         {editableContent.eventContent[event.id]?.name || event.name}
                       </h3>
                     ) : (
-                      <h3 className="text-xl font-semibold mb-2">{editableContent.eventContent[event.id]?.name || event.name}</h3>
+                      <h3 className="text-xl font-semibold mb-2" style={getPersistedTextStyle('h3', editableContent.eventContent[event.id]?.name || event.name)}>{editableContent.eventContent[event.id]?.name || event.name}</h3>
                     )}
                     {isEditMode ? (
                       <p
@@ -461,11 +490,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         suppressContentEditableWarning
                         onBlur={e => setEventField(event.id, 'description', e.currentTarget.textContent || '')}
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('p', editableContent.eventContent[event.id]?.description || event.description)}
                       >
                         {editableContent.eventContent[event.id]?.description || event.description}
                       </p>
                     ) : (
-                      <p className="text-gray-600 mb-4">{editableContent.eventContent[event.id]?.description || event.description}</p>
+                      <p className="text-gray-600 mb-4" style={getPersistedTextStyle('p', editableContent.eventContent[event.id]?.description || event.description)}>{editableContent.eventContent[event.id]?.description || event.description}</p>
                     )}
                     <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
                       {isEditMode ? (
@@ -475,11 +505,14 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                           suppressContentEditableWarning
                           onBlur={e => setEventField(event.id, 'date', e.currentTarget.textContent || '')}
                           onClick={e => setSelectedElement(e.currentTarget)}
+                          style={getPersistedTextStyle('span', String(editableContent.eventContent[event.id]?.date || event.date))}
                         >
-                          Date: {editableContent.eventContent[event.id]?.date || event.date}
+                          {editableContent.eventContent[event.id]?.date || event.date}
                         </span>
                       ) : (
-                        <span>Date: {new Date(editableContent.eventContent[event.id]?.date || event.date).toLocaleDateString()}</span>
+                        <span style={getPersistedTextStyle('span', String(editableContent.eventContent[event.id]?.date || event.date))}>
+                          Date: {new Date(editableContent.eventContent[event.id]?.date || event.date).toLocaleDateString()}
+                        </span>
                       )}
                       {isEditMode ? (
                         <span
@@ -488,17 +521,40 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                           suppressContentEditableWarning
                           onBlur={e => setEventField(event.id, 'attendees', Number(e.currentTarget.textContent) || 0)}
                           onClick={e => setSelectedElement(e.currentTarget)}
+                          style={getPersistedTextStyle('span', String(editableContent.eventContent[event.id]?.attendees || event.attendees))}
                         >
-                          {editableContent.eventContent[event.id]?.attendees || event.attendees} attendees
+                          {editableContent.eventContent[event.id]?.attendees || event.attendees}
                         </span>
                       ) : (
-                        <span>{editableContent.eventContent[event.id]?.attendees || event.attendees} attendees</span>
+                        <span style={getPersistedTextStyle('span', String(editableContent.eventContent[event.id]?.attendees || event.attendees))}>{editableContent.eventContent[event.id]?.attendees || event.attendees} attendees</span>
                       )}
                     </div>
-                    <a href={editableContent.eventContent[event.id]?.link || event.link} target="_blank" rel="noopener noreferrer" data-event-id={event.id}>
-                      <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
-                        Register Now
-                      </button>
+                    <a
+                      href={editableContent.eventContent[event.id]?.link || event.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-event-id={event.id}
+                      className={`w-full bg-white border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block${localStorage.getItem('homePageItemHoverColor:event:' + event.id) || localStorage.getItem('homePageItemHoverTextColor:event:' + event.id) ? ' custom-hover' : ''}`}
+                      style={{
+                        backgroundColor: localStorage.getItem('homePageItemBgColor:event:' + event.id) || undefined,
+                        color: localStorage.getItem('homePageItemTextColor:event:' + event.id) || undefined,
+                        '--hover-color': localStorage.getItem('homePageItemHoverColor:event:' + event.id) || undefined,
+                        '--hover-text-color': localStorage.getItem('homePageItemHoverTextColor:event:' + event.id) || undefined
+                      } as React.CSSProperties}
+                      onClick={isEditMode ? (e => e.preventDefault()) : undefined}
+                    >
+                      {isEditMode ? (
+                        <span
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={e => setButtonLabel('event', event.id, e.currentTarget.textContent || 'Register Now')}
+                          style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                        >
+                          {editableContent.eventContent[event.id]?.buttonLabel || 'Register Now'}
+                        </span>
+                      ) : (
+                        editableContent.eventContent[event.id]?.buttonLabel || 'Register Now'
+                      )}
                     </a>
                   </div>
                 </div>
@@ -508,7 +564,11 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
         </section>
 
         {/* Featured Courses Section */}
-        <section className="py-16 bg-gray-100">
+        <section
+          className="py-16"
+          data-home-section-id="courses"
+          style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:courses') || '#f3f4f6' }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center">
@@ -520,11 +580,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                     suppressContentEditableWarning
                     onBlur={e => setSectionTitle('courses', e.currentTarget.textContent || '')}
                     onClick={e => setSelectedElement(e.currentTarget)}
+                    style={getPersistedTextStyle('h2', editableContent.sectionTitles.courses)}
                   >
                     {editableContent.sectionTitles.courses}
                   </h2>
                 ) : (
-                  <h2 className="text-2xl font-bold text-[#000]">{editableContent.sectionTitles.courses}</h2>
+                  <h2 className="text-2xl font-bold text-[#000]" style={getPersistedTextStyle('h2', editableContent.sectionTitles.courses)}>{editableContent.sectionTitles.courses}</h2>
                 )}
               </div>
               <Link to="/learning" className="text-[#2b333f] font-semibold flex items-center group hover:underline hover:decoration-[#00718f] hover:underline-offset-4 hover:decoration-2">
@@ -576,11 +637,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         suppressContentEditableWarning
                         onBlur={e => setCourseField(course.id, 'title', e.currentTarget.textContent || '')}
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('h3', editableContent.courseContent[course.id]?.title || course.title)}
                       >
                         {editableContent.courseContent[course.id]?.title || course.title}
                       </h3>
                     ) : (
-                      <h3 className="text-xl font-semibold mb-2">{editableContent.courseContent[course.id]?.title || course.title}</h3>
+                      <h3 className="text-xl font-semibold mb-2" style={getPersistedTextStyle('h3', editableContent.courseContent[course.id]?.title || course.title)}>{editableContent.courseContent[course.id]?.title || course.title}</h3>
                     )}
                     {isEditMode ? (
                       <p
@@ -589,11 +651,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         suppressContentEditableWarning
                         onBlur={e => setCourseField(course.id, 'description', e.currentTarget.textContent || '')}
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('p', editableContent.courseContent[course.id]?.description || course.description)}
                       >
                         {editableContent.courseContent[course.id]?.description || course.description}
                       </p>
                     ) : (
-                      <p className="text-gray-600 mb-4">{editableContent.courseContent[course.id]?.description || course.description}</p>
+                      <p className="text-gray-600 mb-4" style={getPersistedTextStyle('p', editableContent.courseContent[course.id]?.description || course.description)}>{editableContent.courseContent[course.id]?.description || course.description}</p>
                     )}
                     <div className="flex justify-between items-center mb-4">
                       {isEditMode ? (
@@ -602,15 +665,20 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                           contentEditable
                           suppressContentEditableWarning
                           onClick={e => setSelectedElement(e.currentTarget)}
+                          style={getPersistedTextStyle('span', editableContent.courseContent[course.id]?.duration || course.duration)}
                         >
                           Duration: {editableContent.courseContent[course.id]?.duration || course.duration}
                         </span>
                       ) : (
-                        <span className="text-sm text-gray-500">Duration: {editableContent.courseContent[course.id]?.duration || course.duration}</span>
+                        <span className="text-sm text-gray-500" style={getPersistedTextStyle('span', editableContent.courseContent[course.id]?.duration || course.duration)}>
+                          Duration: {editableContent.courseContent[course.id]?.duration || course.duration}
+                        </span>
                       )}
+                    </div>
+                    <div className="flex justify-between items-center mb-4">
                       {isEditMode ? (
                         <span
-                          style={{ backgroundColor: '#003869', color: '#FFFFFF', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.875rem' }}
+                          style={{ backgroundColor: '#003869', color: '#FFFFFF', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.875rem', ...getPersistedTextStyle('span', editableContent.courseContent[course.id]?.level || course.level) }}
                           className="outline-none"
                           contentEditable
                           suppressContentEditableWarning
@@ -619,15 +687,37 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                           {editableContent.courseContent[course.id]?.level || course.level}
                         </span>
                       ) : (
-                        <span style={{ backgroundColor: '#003869', color: '#FFFFFF', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.875rem' }}>
+                        <span style={{ backgroundColor: '#003869', color: '#FFFFFF', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.875rem', ...getPersistedTextStyle('span', editableContent.courseContent[course.id]?.level || course.level) }}>
                           {editableContent.courseContent[course.id]?.level || course.level}
                         </span>
                       )}
                     </div>
-                    <a href={editableContent.courseContent[course.id]?.link || course.link} target="_blank" rel="noopener noreferrer" data-course-id={course.id}>
-                      <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
-                        Start Learning
-                      </button>
+                    <a
+                      href={editableContent.courseContent[course.id]?.link || course.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-course-id={course.id}
+                      className={`w-full bg-white border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block${localStorage.getItem('homePageItemHoverColor:course:' + course.id) || localStorage.getItem('homePageItemHoverTextColor:course:' + course.id) ? ' custom-hover' : ''}`}
+                      style={{
+                        backgroundColor: localStorage.getItem('homePageItemBgColor:course:' + course.id) || undefined,
+                        color: localStorage.getItem('homePageItemTextColor:course:' + course.id) || undefined,
+                        '--hover-color': localStorage.getItem('homePageItemHoverColor:course:' + course.id) || undefined,
+                        '--hover-text-color': localStorage.getItem('homePageItemHoverTextColor:course:' + course.id) || undefined
+                      } as React.CSSProperties}
+                      onClick={isEditMode ? (e => e.preventDefault()) : undefined}
+                    >
+                      {isEditMode ? (
+                        <span
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={e => setButtonLabel('course', course.id, e.currentTarget.textContent || 'Start Learning')}
+                          style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                        >
+                          {editableContent.courseContent[course.id]?.buttonLabel || 'Start Learning'}
+                        </span>
+                      ) : (
+                        editableContent.courseContent[course.id]?.buttonLabel || 'Start Learning'
+                      )}
                     </a>
                   </div>
                 </div>
@@ -637,7 +727,11 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
         </section>
               
         {/* Mentorship Program Section */}
-        <section className="py-16 bg-[#ffffff]">
+        <section
+          className="py-16"
+          data-home-section-id="mentorship"
+          style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:mentorship') || '#ffffff' }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center">
@@ -649,11 +743,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                     suppressContentEditableWarning
                     onBlur={e => setSectionTitle('mentors', e.currentTarget.textContent || '')}
                     onClick={e => setSelectedElement(e.currentTarget)}
+                    style={getPersistedTextStyle('h2', editableContent.sectionTitles.mentors)}
                   >
                     {editableContent.sectionTitles.mentors}
                   </h2>
                 ) : (
-                  <h2 className="text-2xl font-bold text-[#000]">{editableContent.sectionTitles.mentors}</h2>
+                  <h2 className="text-2xl font-bold text-[#000]" style={getPersistedTextStyle('h2', editableContent.sectionTitles.mentors)}>{editableContent.sectionTitles.mentors}</h2>
                 )}
               </div>
               <Link to="/mentorship" className="text-[#2b333f] font-semibold flex items-center group hover:underline hover:decoration-[#00718f] hover:underline-offset-4 hover:decoration-2">
@@ -729,11 +824,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         contentEditable
                         suppressContentEditableWarning
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('h3', mentor.name)}
                       >
                         {mentor.name}
                       </h3>
                     ) : (
-                      <h3 className="text-xl font-semibold mb-1">{mentor.name}</h3>
+                      <h3 className="text-xl font-semibold mb-1" style={getPersistedTextStyle('h3', mentor.name)}>{mentor.name}</h3>
                     )}
                     {isEditMode ? (
                       <p
@@ -741,11 +837,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         contentEditable
                         suppressContentEditableWarning
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('p', mentor.title)}
                       >
                         {mentor.title}
                       </p>
                     ) : (
-                      <p className="text-[#2b333f] mb-3">{mentor.title}</p>
+                      <p className="text-[#2b333f] mb-3" style={getPersistedTextStyle('p', mentor.title)}>{mentor.title}</p>
                     )}
                     {isEditMode ? (
                       <p
@@ -753,11 +850,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         contentEditable
                         suppressContentEditableWarning
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('p', mentor.description)}
                       >
                         {mentor.description}
                       </p>
                     ) : (
-                      <p className="text-gray-600 mb-4">{mentor.description}</p>
+                      <p className="text-gray-600 mb-4" style={getPersistedTextStyle('p', mentor.description)}>{mentor.description}</p>
                     )}
                     <div className="mb-4">
                       <h4 className="text-sm font-semibold mb-2">Expertise:</h4>
@@ -782,10 +880,32 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         ))}
                       </div>
                     </div>
-                    <a href={editableContent.mentorImages[mentor.id] || mentor.link} target="_blank" rel="noopener noreferrer" data-mentor-id={mentor.id}>
-                      <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
-                        Connect
-                      </button>
+                    <a
+                      href={editableContent.mentorImages[mentor.id] || mentor.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-mentor-id={mentor.id}
+                      className={`w-full bg-white border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block${localStorage.getItem('homePageItemHoverColor:mentor:' + mentor.id) || localStorage.getItem('homePageItemHoverTextColor:mentor:' + mentor.id) ? ' custom-hover' : ''}`}
+                      style={{
+                        backgroundColor: localStorage.getItem('homePageItemBgColor:mentor:' + mentor.id) || undefined,
+                        color: localStorage.getItem('homePageItemTextColor:mentor:' + mentor.id) || undefined,
+                        '--hover-color': localStorage.getItem('homePageItemHoverColor:mentor:' + mentor.id) || undefined,
+                        '--hover-text-color': localStorage.getItem('homePageItemHoverTextColor:mentor:' + mentor.id) || undefined
+                      } as React.CSSProperties}
+                      onClick={isEditMode ? (e => e.preventDefault()) : undefined}
+                    >
+                      {isEditMode ? (
+                        <span
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={e => setMentorButtonLabel(mentor.id, e.currentTarget.textContent || 'Connect')}
+                          style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                        >
+                          {editableContent.mentorButtonLabels[mentor.id] || 'Connect'}
+                        </span>
+                      ) : (
+                        editableContent.mentorButtonLabels[mentor.id] || 'Connect'
+                      )}
                     </a>
                   </div>
                 </div>
@@ -794,7 +914,11 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
           </div>
         </section>
      {/* Opportunities Program Section */}
-        <section className="py-16 bg-gray-100">
+        <section
+          className="py-16"
+          data-home-section-id="opportunities"
+          style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:opportunities') || '#f3f4f6' }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center">
@@ -806,11 +930,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                     suppressContentEditableWarning
                     onBlur={e => setSectionTitle('opportunities', e.currentTarget.textContent || '')}
                     onClick={e => setSelectedElement(e.currentTarget)}
+                    style={getPersistedTextStyle('h2', editableContent.sectionTitles.opportunities)}
                   >
                     {editableContent.sectionTitles.opportunities}
                   </h2>
                 ) : (
-                  <h2 className="text-2xl font-bold text-[#000]">{editableContent.sectionTitles.opportunities}</h2>
+                  <h2 className="text-2xl font-bold text-[#000]" style={getPersistedTextStyle('h2', editableContent.sectionTitles.opportunities)}>{editableContent.sectionTitles.opportunities}</h2>
                 )}
               </div>
               <Link to="/opportunities" className="text-[#2b333f] font-semibold flex items-center group hover:underline hover:decoration-[#00718f] hover:underline-offset-4 hover:decoration-2">
@@ -860,11 +985,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         suppressContentEditableWarning
                         onBlur={e => setOpportunityField(opportunity.id, 'title', e.currentTarget.textContent || '')}
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('h3', editableContent.opportunityContent[opportunity.id]?.title || opportunity.title)}
                       >
                         {editableContent.opportunityContent[opportunity.id]?.title || opportunity.title}
                       </h3>
                     ) : (
-                      <h3 className="text-xl font-semibold mb-2">{editableContent.opportunityContent[opportunity.id]?.title || opportunity.title}</h3>
+                      <h3 className="text-xl font-semibold mb-2" style={getPersistedTextStyle('h3', editableContent.opportunityContent[opportunity.id]?.title || opportunity.title)}>{editableContent.opportunityContent[opportunity.id]?.title || opportunity.title}</h3>
                     )}
                     {isEditMode ? (
                       <span
@@ -876,6 +1002,7 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         contentEditable
                         suppressContentEditableWarning
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('span', editableContent.opportunityContent[opportunity.id]?.type || opportunity.type)}
                       >
                         {editableContent.opportunityContent[opportunity.id]?.type || opportunity.type}
                       </span>
@@ -884,7 +1011,7 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         editableContent.opportunityContent[opportunity.id]?.type === 'Hackathon' ? 'bg-green-100 text-green-800' :
                         editableContent.opportunityContent[opportunity.id]?.type === 'Research' ? 'bg-purple-100 text-purple-800' :
                         'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      }`} style={getPersistedTextStyle('span', editableContent.opportunityContent[opportunity.id]?.type || opportunity.type)}>
                         {editableContent.opportunityContent[opportunity.id]?.type || opportunity.type}
                       </span>
                     )}
@@ -895,11 +1022,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         suppressContentEditableWarning
                         onBlur={e => setOpportunityField(opportunity.id, 'description', e.currentTarget.textContent || '')}
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('p', editableContent.opportunityContent[opportunity.id]?.description || opportunity.description)}
                       >
                         {editableContent.opportunityContent[opportunity.id]?.description || opportunity.description}
                       </p>
                     ) : (
-                      <p className="text-gray-600 mt-3 mb-4">{editableContent.opportunityContent[opportunity.id]?.description || opportunity.description}</p>
+                      <p className="text-gray-600 mt-3 mb-4" style={getPersistedTextStyle('p', editableContent.opportunityContent[opportunity.id]?.description || opportunity.description)}>{editableContent.opportunityContent[opportunity.id]?.description || opportunity.description}</p>
                     )}
                     <div className="flex items-center justify-between text-gray-500 text-sm mb-4">
                       <div className="flex items-center">
@@ -910,11 +1038,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                             contentEditable
                             suppressContentEditableWarning
                             onClick={e => setSelectedElement(e.currentTarget)}
+                            style={getPersistedTextStyle('span', editableContent.opportunityContent[opportunity.id]?.location || opportunity.location)}
                           >
                             {editableContent.opportunityContent[opportunity.id]?.location || opportunity.location}
                           </span>
                         ) : (
-                          <span>{editableContent.opportunityContent[opportunity.id]?.location || opportunity.location}</span>
+                          <span style={getPersistedTextStyle('span', editableContent.opportunityContent[opportunity.id]?.location || opportunity.location)}>{editableContent.opportunityContent[opportunity.id]?.location || opportunity.location}</span>
                         )}
                       </div>
                       <div className="flex items-center">
@@ -925,30 +1054,53 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                             contentEditable
                             suppressContentEditableWarning
                             onClick={e => setSelectedElement(e.currentTarget)}
+                            style={getPersistedTextStyle('span', editableContent.opportunityContent[opportunity.id]?.deadline || opportunity.deadline)}
                           >
                             Deadline: {editableContent.opportunityContent[opportunity.id]?.deadline || opportunity.deadline}
                           </span>
                         ) : (
-                          <span>Deadline: {new Date(editableContent.opportunityContent[opportunity.id]?.deadline || opportunity.deadline).toLocaleDateString()}</span>
+                          <span style={getPersistedTextStyle('span', String(new Date(editableContent.opportunityContent[opportunity.id]?.deadline || opportunity.deadline).toLocaleDateString()))}>Deadline: {new Date(editableContent.opportunityContent[opportunity.id]?.deadline || opportunity.deadline).toLocaleDateString()}</span>
                         )}
                       </div>
                     </div>
                    <a
                       href={editableContent.opportunityContent[opportunity.id]?.link || opportunity.link}
                       target="_blank"
-                      className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block"
+                      className={`w-full bg-white border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block${localStorage.getItem('homePageItemHoverColor:opportunity:' + opportunity.id) || localStorage.getItem('homePageItemHoverTextColor:opportunity:' + opportunity.id) ? ' custom-hover' : ''}`}
                       data-opportunity-id={opportunity.id}
+                      style={{
+                        backgroundColor: localStorage.getItem('homePageItemBgColor:opportunity:' + opportunity.id) || undefined,
+                        color: localStorage.getItem('homePageItemTextColor:opportunity:' + opportunity.id) || undefined,
+                        '--hover-color': localStorage.getItem('homePageItemHoverColor:opportunity:' + opportunity.id) || undefined,
+                        '--hover-text-color': localStorage.getItem('homePageItemHoverTextColor:opportunity:' + opportunity.id) || undefined
+                      } as React.CSSProperties}
+                      onClick={isEditMode ? (e => e.preventDefault()) : undefined}
                     >
-                      Apply Now
+                      {isEditMode ? (
+                        <span
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={e => setButtonLabel('opportunity', opportunity.id, e.currentTarget.textContent || 'Apply Now')}
+                          style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                        >
+                          {editableContent.opportunityContent[opportunity.id]?.buttonLabel || 'Apply Now'}
+                        </span>
+                      ) : (
+                        editableContent.opportunityContent[opportunity.id]?.buttonLabel || 'Apply Now'
+                      )}
                     </a>
                   </div>
-                  </div>
+                </div>
               ))}
             </div>
           </div>
         </section>
          {/* Articles Program Section */}
-        <section className="py-16 bg-[#ffffff]">
+        <section
+          className="py-16"
+          data-home-section-id="articles"
+          style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:articles') || '#ffffff' }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center">
@@ -960,11 +1112,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                     suppressContentEditableWarning
                     onBlur={e => setSectionTitle('articles', e.currentTarget.textContent || '')}
                     onClick={e => setSelectedElement(e.currentTarget)}
+                    style={getPersistedTextStyle('h2', editableContent.sectionTitles.articles)}
                   >
                     {editableContent.sectionTitles.articles}
                   </h2>
                 ) : (
-                  <h2 className="text-2xl font-bold text-[#000]">{editableContent.sectionTitles.articles}</h2>
+                  <h2 className="text-2xl font-bold text-[#000]" style={getPersistedTextStyle('h2', editableContent.sectionTitles.articles)}>{editableContent.sectionTitles.articles}</h2>
                 )}
               </div>
               <Link to="/insights" className="text-[#2b333f] font-semibold flex items-center group hover:underline hover:decoration-[#00718f] hover:underline-offset-4 hover:decoration-2">
@@ -1015,11 +1168,12 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         suppressContentEditableWarning
                         onBlur={e => setArticleField(article.id, 'title', e.currentTarget.textContent || '')}
                         onClick={e => setSelectedElement(e.currentTarget)}
+                        style={getPersistedTextStyle('h3', editableContent.articleContent[article.id]?.title || article.title)}
                       >
                         {editableContent.articleContent[article.id]?.title || article.title}
                       </h3>
                     ) : (
-                      <h3 className="text-xl font-semibold mb-2">{editableContent.articleContent[article.id]?.title || article.title}</h3>
+                      <h3 className="text-xl font-semibold mb-2" style={getPersistedTextStyle('h3', editableContent.articleContent[article.id]?.title || article.title)}>{editableContent.articleContent[article.id]?.title || article.title}</h3>
                     )}
                     {isEditMode ? (
                       <p
@@ -1066,10 +1220,32 @@ const HomePageContent: React.FC<HomePageProps> = ({ isEditMode, selectedElement,
                         )}
                       </div>
                     </div>
-                    <a href={editableContent.articleContent[article.id]?.link || article.link} target="_blank" rel="noopener noreferrer" data-article-id={article.id}>
-                      <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
-                        Read More
-                      </button>
+                    <a
+                      href={editableContent.articleContent[article.id]?.link || article.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`w-full bg-white border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block${localStorage.getItem('homePageItemHoverColor:article:' + article.id) || localStorage.getItem('homePageItemHoverTextColor:article:' + article.id) ? ' custom-hover' : ''}`}
+                      data-article-id={article.id}
+                      style={{
+                        backgroundColor: localStorage.getItem('homePageItemBgColor:article:' + article.id) || undefined,
+                        color: localStorage.getItem('homePageItemTextColor:article:' + article.id) || undefined,
+                        '--hover-color': localStorage.getItem('homePageItemHoverColor:article:' + article.id) || undefined,
+                        '--hover-text-color': localStorage.getItem('homePageItemHoverTextColor:article:' + article.id) || undefined
+                      } as React.CSSProperties}
+                      onClick={isEditMode ? (e => e.preventDefault()) : undefined}
+                    >
+                      {isEditMode ? (
+                        <span
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={e => setButtonLabel('article', article.id, e.currentTarget.textContent || 'Read More')}
+                          style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                        >
+                          {editableContent.articleContent[article.id]?.buttonLabel || 'Read More'}
+                        </span>
+                      ) : (
+                        editableContent.articleContent[article.id]?.buttonLabel || 'Read More'
+                      )}
                     </a>
                   </div>
                 </div>

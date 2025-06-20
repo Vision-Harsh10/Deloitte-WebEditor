@@ -13,6 +13,7 @@ export interface EditableContent {
     articles: string;
   };
   mentorImages: Record<string, string>;
+  mentorButtonLabels: Record<string, string>;
   eventContent: Record<string, {
     name: string;
     description: string;
@@ -20,6 +21,7 @@ export interface EditableContent {
     attendees: string;
     imageUrl?: string;
     link: string;
+    buttonLabel?: string;
   }>;
   courseContent: Record<string, {
     title: string;
@@ -28,6 +30,7 @@ export interface EditableContent {
     level: string;
     imageUrl?: string;
     link: string;
+    buttonLabel?: string;
   }>;
   opportunityContent: Record<string, {
     title: string;
@@ -37,6 +40,7 @@ export interface EditableContent {
     deadline: string;
     link: string;
     imageUrl?: string;
+    buttonLabel?: string;
   }>;
   articleContent: Record<string, {
     title: string;
@@ -45,6 +49,7 @@ export interface EditableContent {
     author: string;
     link: string;
     imageUrl?: string;
+    buttonLabel?: string;
   }>;
 }
 
@@ -66,6 +71,8 @@ interface HomePageEditContextType {
   setImageDimensions: (id: string, width: number, height: number) => void;
   saveToLocalStorage: () => void;
   setEditableContent: React.Dispatch<React.SetStateAction<EditableContent>>;
+  setButtonLabel: (type: 'event' | 'course' | 'opportunity' | 'article', id: string, label: string) => void;
+  setMentorButtonLabel: (mentorId: string, label: string) => void;
 }
 
 const HomePageEditContext = createContext<HomePageEditContextType | undefined>(undefined);
@@ -77,13 +84,41 @@ export const useHomePageEdit = () => {
 };
 
 export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initialContent: EditableContent }> = ({ children, initialContent }) => {
+  const migrateContent = (content: any): EditableContent => {
+    // Ensure mentorButtonLabels exists
+    if (!content.mentorButtonLabels) content.mentorButtonLabels = {};
+    // Ensure buttonLabel exists for all items
+    if (content.eventContent) {
+      Object.keys(content.eventContent).forEach(id => {
+        if (!('buttonLabel' in content.eventContent[id])) content.eventContent[id].buttonLabel = '';
+      });
+    }
+    if (content.courseContent) {
+      Object.keys(content.courseContent).forEach(id => {
+        if (!('buttonLabel' in content.courseContent[id])) content.courseContent[id].buttonLabel = '';
+      });
+    }
+    if (content.opportunityContent) {
+      Object.keys(content.opportunityContent).forEach(id => {
+        if (!('buttonLabel' in content.opportunityContent[id])) content.opportunityContent[id].buttonLabel = '';
+      });
+    }
+    if (content.articleContent) {
+      Object.keys(content.articleContent).forEach(id => {
+        if (!('buttonLabel' in content.articleContent[id])) content.articleContent[id].buttonLabel = '';
+      });
+    }
+    return content;
+  };
+
   const [editableContent, setEditableContent] = useState<EditableContent>(() => {
     try {
-    const savedContent = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return savedContent ? JSON.parse(savedContent) : initialContent;
+      const savedContent = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const parsed = savedContent ? JSON.parse(savedContent) : initialContent;
+      return migrateContent(parsed);
     } catch (e) {
       console.error("Failed to parse saved home page content, using initial content:", e);
-      return initialContent;
+      return migrateContent(initialContent);
     }
   });
 
@@ -104,6 +139,11 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
   useEffect(() => {
     localStorage.setItem(IMAGE_DIMENSIONS_KEY, JSON.stringify(imageDimensions));
   }, [imageDimensions]);
+
+  // Always migrate content on every update to ensure all fields exist
+  useEffect(() => {
+    setEditableContent(prev => migrateContent({ ...prev }));
+  }, []); // Only run once on mount to avoid infinite loop
 
   const setSectionTitle = (key: string, value: string) => {
     setEditableContent(prev => ({
@@ -213,6 +253,41 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
     localStorage.setItem(IMAGE_DIMENSIONS_KEY, JSON.stringify(imageDimensions));
   };
 
+  const contentKeyMap = {
+    event: 'eventContent',
+    course: 'courseContent',
+    opportunity: 'opportunityContent',
+    article: 'articleContent',
+  } as const;
+
+  const setButtonLabel = (type: 'event' | 'course' | 'opportunity' | 'article', id: string, label: string) => {
+    setEditableContent(prev => {
+      const key = contentKeyMap[type];
+      const updated = {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [id]: {
+            ...prev[key][id],
+            buttonLabel: label
+          }
+        }
+      };
+      console.log('setButtonLabel', type, id, label, updated);
+      return updated;
+    });
+  };
+
+  const setMentorButtonLabel = (mentorId: string, label: string) => {
+    setEditableContent(prev => ({
+      ...prev,
+      mentorButtonLabels: {
+        ...prev.mentorButtonLabels,
+        [mentorId]: label
+      }
+    }));
+  };
+
   const value: HomePageEditContextType = {
     editableContent,
     setSectionTitle,
@@ -230,7 +305,9 @@ export const HomePageEditProvider: React.FC<{ children: React.ReactNode; initial
     imageDimensions,
     setImageDimensions,
     saveToLocalStorage,
-    setEditableContent
+    setEditableContent,
+    setButtonLabel,
+    setMentorButtonLabel
   };
 
   return (

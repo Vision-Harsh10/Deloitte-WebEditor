@@ -8,5 +8,21 @@
 
 /* Custom hover effect */
 .custom-hover:hover {
-  background-color: var(--hover-color, #f8f9fa) !important;
+  background-color: var(--hover-color, #1783b0) !important;
+  color: var(--hover-text-color, #fff) !important;
+}
+
+.nav-hover-link:hover {
+  color: var(--hover-text-color, #86bc25) !important;
+}
+
+.careers-btn-override {
+  color: var(--careers-btn-color, #032d42) !important;
+}
+
+.custom-nav-color {
+  color: var(--custom-text-color, inherit) !important;
+}
+.custom-nav-color:hover {
+  color: var(--hover-text-color, inherit) !important;
 }

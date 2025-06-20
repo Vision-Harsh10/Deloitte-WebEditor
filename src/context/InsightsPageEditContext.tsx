@@ -13,7 +13,9 @@ interface EditableContent {
     author: string;
     imageUrl?: string;
     link: string;
+    buttonLabel?: string;
   }>;
+  subscribeBtnLabel?: string;
 }
 
 interface InsightsPageEditContextType {
@@ -23,6 +25,9 @@ interface InsightsPageEditContextType {
   imageDimensions: Record<string, { width: number; height: number }>;
   setArticleImageDimensions: (articleId: string, width: number, height: number) => void;
   setArticleField: (articleId: string, field: keyof Article, value: string | number | string[]) => void;
+  setArticleButtonLabel: (articleId: string, label: string) => void;
+  subscribeBtnLabel: string;
+  setSubscribeBtnLabel: (label: string) => void;
   saveToLocalStorage: () => void;
 }
 
@@ -46,13 +51,15 @@ export const InsightsPageEditProvider: React.FC<{ children: React.ReactNode; ini
           articleContent: {
             ...initialContent.articleContent,
             ...loadedContent.articleContent,
-          }
+          },
+          subscribeBtnLabel: loadedContent.subscribeBtnLabel || initialContent.subscribeBtnLabel || 'Subscribe',
         };
       } catch (e) {
         console.error("Failed to parse saved insights page content, using initial content:", e);
         parsedContent = initialContent;
       }
     }
+    if (!parsedContent.subscribeBtnLabel) parsedContent.subscribeBtnLabel = 'Subscribe';
     return parsedContent;
   });
 
@@ -102,6 +109,26 @@ export const InsightsPageEditProvider: React.FC<{ children: React.ReactNode; ini
     }));
   };
 
+  const setArticleButtonLabel = (articleId: string, label: string) => {
+    setEditableContent(prev => ({
+      ...prev,
+      articleContent: {
+        ...prev.articleContent,
+        [articleId]: {
+          ...prev.articleContent[articleId],
+          buttonLabel: label
+        }
+      }
+    }));
+  };
+
+  const setSubscribeBtnLabel = (label: string) => {
+    setEditableContent(prev => ({
+      ...prev,
+      subscribeBtnLabel: label
+    }));
+  };
+
   const saveToLocalStorage = () => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(editableContent));
     localStorage.setItem(IMAGE_DIMENSIONS_KEY, JSON.stringify(imageDimensions));
@@ -117,6 +144,9 @@ export const InsightsPageEditProvider: React.FC<{ children: React.ReactNode; ini
     imageDimensions,
     setArticleImageDimensions,
     setArticleField,
+    setArticleButtonLabel,
+    subscribeBtnLabel: editableContent.subscribeBtnLabel || 'Subscribe',
+    setSubscribeBtnLabel,
     saveToLocalStorage
   };
 

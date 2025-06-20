@@ -15,6 +15,7 @@ interface HeroContent {
 const HERO_BANNER_STORAGE_KEY = 'heroBannerContent';
 const HERO_BANNER_IMAGE_DIMENSIONS_KEY = 'heroBannerImageDimensions';
 const HERO_BANNER_IMAGE_POSITION_KEY = 'heroBannerImagePosition';
+const HERO_BTN_LABEL_KEY = 'heroBtnLabel';
 
 const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement }) => {
   const [heroContent, setHeroContent] = useState<HeroContent>(() => {
@@ -79,6 +80,9 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement 
 
   const [resetKey, setResetKey] = useState(0);
 
+  // Hero button label persistence
+  const [heroBtnLabel, setHeroBtnLabel] = useState(() => localStorage.getItem(HERO_BTN_LABEL_KEY) || 'Get Started');
+
   // Save to localStorage on exit edit mode
   useEffect(() => {
     if (!isEditMode) {
@@ -93,7 +97,8 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement 
       localStorage.setItem(HERO_BANNER_IMAGE_DIMENSIONS_KEY, JSON.stringify(imageDimensions));
       localStorage.setItem(HERO_BANNER_IMAGE_POSITION_KEY, JSON.stringify(imagePosition));
     }
-  }, [isEditMode, heroContent, backgroundImage, gradientColors, imageDimensions, imagePosition]);
+    localStorage.setItem(HERO_BTN_LABEL_KEY, heroBtnLabel);
+  }, [isEditMode, heroContent, backgroundImage, gradientColors, imageDimensions, imagePosition, heroBtnLabel]);
 
   const handleContentChange = (field: keyof HeroContent, value: string) => {
     setHeroContent((prev: HeroContent) => ({
@@ -122,6 +127,32 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement 
     setImagePosition(newPosition);
     localStorage.setItem(HERO_BANNER_IMAGE_POSITION_KEY, JSON.stringify(newPosition));
   };
+
+  // Utility to get persisted color for a tag and text
+  function getPersistedTextColor(tag: string, text: string) {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      hash |= 0;
+    }
+    const key = `textColor:${tag}:hash${hash}`;
+    return localStorage.getItem(key) || undefined;
+  }
+
+  // Utility to get persisted text style for a tag and text
+  function getPersistedTextStyle(tag: string, text: string) {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      hash |= 0;
+    }
+    const key = `textStyle:${tag}:hash${hash}`;
+    try {
+      return JSON.parse(localStorage.getItem(key) || '{}');
+    } catch {
+      return {};
+    }
+  }
 
   return (
     <div className="relative bg-[#001f82] text-white py-24">
@@ -199,11 +230,28 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement 
               suppressContentEditableWarning
               onBlur={e => handleContentChange('title', e.currentTarget.textContent || '')}
               onClick={e => setSelectedElement(e.currentTarget)}
+              style={{
+                color: getPersistedTextColor('h1', heroContent.title),
+                ...getPersistedTextStyle('h1', heroContent.title),
+                textAlign: getPersistedTextStyle('h1', heroContent.title).textAlign || undefined,
+                fontSize: getPersistedTextStyle('h1', heroContent.title).fontSize || undefined,
+                fontFamily: getPersistedTextStyle('h1', heroContent.title).fontFamily || undefined,
+                lineHeight: getPersistedTextStyle('h1', heroContent.title).lineHeight || undefined,
+                letterSpacing: getPersistedTextStyle('h1', heroContent.title).letterSpacing || undefined
+              }}
             >
               {heroContent.title}
             </h1>
           ) : (
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{
+              color: getPersistedTextColor('h1', heroContent.title),
+              ...getPersistedTextStyle('h1', heroContent.title),
+              textAlign: getPersistedTextStyle('h1', heroContent.title).textAlign || undefined,
+              fontSize: getPersistedTextStyle('h1', heroContent.title).fontSize || undefined,
+              fontFamily: getPersistedTextStyle('h1', heroContent.title).fontFamily || undefined,
+              lineHeight: getPersistedTextStyle('h1', heroContent.title).lineHeight || undefined,
+              letterSpacing: getPersistedTextStyle('h1', heroContent.title).letterSpacing || undefined
+            }}>
               {heroContent.title}
             </h1>
           )}
@@ -214,20 +262,56 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ isEditMode, setSelectedElement 
               suppressContentEditableWarning
               onBlur={e => handleContentChange('subtitle', e.currentTarget.textContent || '')}
               onClick={e => setSelectedElement(e.currentTarget)}
+              style={{
+                color: getPersistedTextColor('p', heroContent.subtitle),
+                ...getPersistedTextStyle('p', heroContent.subtitle),
+                textAlign: getPersistedTextStyle('p', heroContent.subtitle).textAlign || undefined,
+                fontSize: getPersistedTextStyle('p', heroContent.subtitle).fontSize || undefined,
+                fontFamily: getPersistedTextStyle('p', heroContent.subtitle).fontFamily || undefined,
+                lineHeight: getPersistedTextStyle('p', heroContent.subtitle).lineHeight || undefined,
+                letterSpacing: getPersistedTextStyle('p', heroContent.subtitle).letterSpacing || undefined
+              }}
             >
               {heroContent.subtitle}
             </p>
           ) : (
-            <p className="text-xl md:text-2xl">
+            <p className="text-xl md:text-2xl" style={{
+              color: getPersistedTextColor('p', heroContent.subtitle),
+              ...getPersistedTextStyle('p', heroContent.subtitle),
+              textAlign: getPersistedTextStyle('p', heroContent.subtitle).textAlign || undefined,
+              fontSize: getPersistedTextStyle('p', heroContent.subtitle).fontSize || undefined,
+              fontFamily: getPersistedTextStyle('p', heroContent.subtitle).fontFamily || undefined,
+              lineHeight: getPersistedTextStyle('p', heroContent.subtitle).lineHeight || undefined,
+              letterSpacing: getPersistedTextStyle('p', heroContent.subtitle).letterSpacing || undefined
+            }}>
               {heroContent.subtitle}
             </p>
           )}
           <div className="mt-8">
             <a
               href="/"
-              className="inline-block bg-[#218c1b] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#54c22a] hover:text-[#000000] transition-colors"
+              data-hero-btn
+              className={`inline-block px-8 py-3 rounded-full font-semibold transition-colors text-center bg-[#218c1b] text-white hover:bg-[#54c22a] hover:text-[#000000]${localStorage.getItem('heroBtnHoverColor') || localStorage.getItem('heroBtnHoverTextColor') ? ' custom-hover' : ''}`}
+              style={{
+                backgroundColor: localStorage.getItem('heroBtnBgColor') || undefined,
+                color: localStorage.getItem('heroBtnTextColor') || undefined,
+                '--hover-color': localStorage.getItem('heroBtnHoverColor') || undefined,
+                '--hover-text-color': localStorage.getItem('heroBtnHoverTextColor') || undefined
+              } as React.CSSProperties}
+              onClick={isEditMode ? (e => e.preventDefault()) : undefined}
             >
-              Get Started
+              {isEditMode ? (
+                <span
+                  contentEditable
+                  suppressContentEditableWarning
+                  onBlur={e => setHeroBtnLabel(e.currentTarget.textContent || 'Get Started')}
+                  style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                >
+                  {heroBtnLabel}
+                </span>
+              ) : (
+                heroBtnLabel
+              )}
             </a>
           </div>
         </div>

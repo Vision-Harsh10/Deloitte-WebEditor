@@ -69,6 +69,23 @@ const LearningPage: React.FC<LearningPageProps> = ({ isEditMode, selectedElement
   );
 };
 
+const LEARNING_BTN_LABELS_KEY = 'learningBtnLabels';
+
+function getInitialLearningBtnLabels(courses: Course[]) {
+  const saved = localStorage.getItem(LEARNING_BTN_LABELS_KEY);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      // fallback to default
+    }
+  }
+  // Default: all courses get 'Start Learning'
+  const obj: Record<string, string> = {};
+  courses.forEach(c => { obj[c.id] = 'Start Learning'; });
+  return obj;
+}
+
 const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selectedElement, setSelectedElement }) => {
   const {
     courseList,
@@ -78,6 +95,13 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
     setCourseImageDimensions,
     saveToLocalStorage
   } = useLearningPageEdit();
+
+  const [learningBtnLabels, setLearningBtnLabels] = useState<Record<string, string>>(() => getInitialLearningBtnLabels(courses));
+
+  // Persist learningBtnLabels to localStorage
+  useEffect(() => {
+    localStorage.setItem(LEARNING_BTN_LABELS_KEY, JSON.stringify(learningBtnLabels));
+  }, [learningBtnLabels]);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -103,10 +127,39 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
     return courseList.find(c => c.id === courseId) || courses.find(c => c.id === courseId);
   };
 
+  // Utility to get persisted text style for a tag and text
+  function getPersistedTextStyle(tag: string, text?: string) {
+    text = text || '';
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      hash |= 0;
+    }
+    const styleKey = `textStyle:${tag}:hash${hash}`;
+    const colorKey = `textColor:${tag}:hash${hash}`;
+    let styleObj: Record<string, any> = {};
+    try {
+      styleObj = JSON.parse(localStorage.getItem(styleKey) || '{}');
+    } catch {}
+    const color = localStorage.getItem(colorKey);
+    if (color) {
+      styleObj.color = color;
+    }
+    return styleObj;
+  }
+
   return (
-    <div className='bg-gray-200'>
+    <div
+      className='min-h-screen'
+      data-home-section-id='learning-page'
+      style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:learning-page') || '#e5e7eb' }}
+    >
       {/* Hero Section */}
-      <div className="bg-[#000000] text-white py-16">
+      <div
+        className="text-white py-16"
+        data-home-section-id="learning-hero"
+        style={{ backgroundColor: localStorage.getItem('homeSectionBgColor:learning-hero') || '#000000' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1
             className="text-4xl font-bold mb-4 text-[#ffffff] outline-none"
@@ -114,6 +167,7 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setCourseField('hero-title', 'title' as keyof Course, e.currentTarget.textContent || 'Explore Learning')}
+            style={getPersistedTextStyle('h1', getCourseData('hero-title')?.title || 'Explore Learning')}
           >
             {getCourseData('hero-title')?.title || 'Explore Learning'}
           </h1>
@@ -123,6 +177,7 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setCourseField('hero-description', 'description' as keyof Course, e.currentTarget.textContent || 'Discover courses and resources to enhance your skills')}
+            style={getPersistedTextStyle('p', getCourseData('hero-description')?.description || 'Discover courses and resources to enhance your skills')}
           >
             {getCourseData('hero-description')?.description || 'Discover courses and resources to enhance your skills'}
           </p>
@@ -139,6 +194,7 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
             suppressContentEditableWarning
             onClick={e => setSelectedElement(e.currentTarget)}
             onBlur={e => setCourseField('courses-title', 'title' as keyof Course, e.currentTarget.textContent || 'Featured Courses')}
+            style={getPersistedTextStyle('h2', getCourseData('courses-title')?.title || 'Featured Courses')}
           >
             {getCourseData('courses-title')?.title || 'Featured Courses'}
           </h2>
@@ -173,6 +229,7 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
                   suppressContentEditableWarning
                   onClick={e => setSelectedElement(e.currentTarget)}
                   onBlur={e => setCourseField(course.id, 'title', e.currentTarget.textContent || course.title)}
+                  style={getPersistedTextStyle('h3', course.title)}
                 >
                   {course.title}
                 </h3>
@@ -182,34 +239,50 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
                   suppressContentEditableWarning
                   onClick={e => setSelectedElement(e.currentTarget)}
                   onBlur={e => setCourseField(course.id, 'description', e.currentTarget.textContent || course.description)}
+                  style={getPersistedTextStyle('p', course.description)}
                 >
                   {course.description}
                 </p>
                 <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
-                  <span
-                    className="outline-none"
-                    contentEditable={isEditMode}
-                    suppressContentEditableWarning
-                    onClick={e => setSelectedElement(e.currentTarget)}
-                    onBlur={e => setCourseField(course.id, 'duration', e.currentTarget.textContent || course.duration)}
-                  >
-                    Duration: {course.duration}
-                  </span>
-                  <span
-                    className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full outline-none"
-                    contentEditable={isEditMode}
-                    suppressContentEditableWarning
-                    onClick={e => setSelectedElement(e.currentTarget)}
-                    onBlur={e => setCourseField(course.id, 'level', e.currentTarget.textContent || course.level)}
-                  >
-                    {course.level}
-                  </span>
+                  {isEditMode ? (
+                    <span
+                      className="outline-none"
+                      contentEditable
+                      suppressContentEditableWarning
+                      onClick={e => setSelectedElement(e.currentTarget)}
+                      onBlur={e => setCourseField(course.id, 'duration', e.currentTarget.textContent || course.duration)}
+                      style={getPersistedTextStyle('span', course.duration)}
+                    >
+                      {course.duration}
+                    </span>
+                  ) : (
+                    <span style={getPersistedTextStyle('span', course.duration)}>
+                      Duration: {course.duration}
+                    </span>
+                  )}
+                  {isEditMode ? (
+                    <span
+                      className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full outline-none"
+                      contentEditable
+                      suppressContentEditableWarning
+                      onClick={e => setSelectedElement(e.currentTarget)}
+                      onBlur={e => setCourseField(course.id, 'level', e.currentTarget.textContent || course.level)}
+                      style={getPersistedTextStyle('span', course.level)}
+                    >
+                      {course.level}
+                    </span>
+                  ) : (
+                    <span style={getPersistedTextStyle('span', course.level)}>
+                      {course.level}
+                    </span>
+                  )}
                 </div>
                 <a
                   href={course.link}
                   target="_blank"
                   rel="noopener noreferrer"
                   data-course-id={course.id}
+                  data-learning-btn={course.id}
                   onClick={e => {
                     if (isEditMode) {
                       e.preventDefault();
@@ -217,10 +290,29 @@ const LearningPageContent: React.FC<LearningPageProps> = ({ isEditMode, selected
                       setSelectedElement(e.currentTarget);
                     }
                   }}
+                  className={`w-full border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors text-center block bg-white text-[#1783b0] hover:bg-[#1783b0] hover:text-white${localStorage.getItem('learningBtnHoverColor:' + course.id) || localStorage.getItem('learningBtnHoverTextColor:' + course.id) ? ' custom-hover' : ''}`}
+                  style={{
+                    backgroundColor: localStorage.getItem('learningBtnBgColor:' + course.id) || undefined,
+                    color: localStorage.getItem('learningBtnTextColor:' + course.id) || undefined,
+                    '--hover-color': localStorage.getItem('learningBtnHoverColor:' + course.id) || undefined,
+                    '--hover-text-color': localStorage.getItem('learningBtnHoverTextColor:' + course.id) || undefined
+                  } as React.CSSProperties}
                 >
-                  <button className="w-full bg-white text-[#1783b0] border-2 border-[#1783b0] py-2 rounded-lg font-semibold transition-colors hover:bg-[#1783b0] hover:text-white text-center block">
-                    Start Learning
-                  </button>
+                  {isEditMode ? (
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={e => {
+                        const value = (e.currentTarget && e.currentTarget.textContent) ? e.currentTarget.textContent : 'Start Learning';
+                        setLearningBtnLabels(prev => ({ ...prev, [course.id]: value }));
+                      }}
+                      style={{ outline: '1px dashed #ccc', cursor: 'text' }}
+                    >
+                      {learningBtnLabels[course.id] || 'Start Learning'}
+                    </span>
+                  ) : (
+                    learningBtnLabels[course.id] || 'Start Learning'
+                  )}
                 </a>
               </div>
             </div>

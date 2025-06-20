@@ -132,12 +132,72 @@ const EditModeControls: React.FC<EditModeControlsProps> = ({
     if (!selectedElement) return;
     selectedElement.style.lineHeight = lineHeight;
     onStyleChange({ lineHeight });
+    // Persist lineHeight for generic headings/subheadings
+    if (["h1","h2","h3","h4","h5","h6","p","span","div"].includes(selectedElement.tagName.toLowerCase())) {
+      let uniqueKey = '';
+      if (selectedElement.id) {
+        uniqueKey = `textStyle:${selectedElement.tagName.toLowerCase()}:${selectedElement.id}`;
+      } else {
+        let text = selectedElement.textContent || '';
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+          hash = ((hash << 5) - hash) + text.charCodeAt(i);
+          hash |= 0;
+        }
+        uniqueKey = `textStyle:${selectedElement.tagName.toLowerCase()}:hash${hash}`;
+      }
+      let styleObj = {};
+      try {
+        styleObj = JSON.parse(localStorage.getItem(uniqueKey) || '{}');
+      } catch {}
+      localStorage.setItem(uniqueKey, JSON.stringify({
+        ...styleObj,
+        lineHeight,
+        fontWeight: selectedElement.style.fontWeight,
+        fontStyle: selectedElement.style.fontStyle,
+        textDecoration: selectedElement.style.textDecoration,
+        textAlign: selectedElement.style.textAlign,
+        fontSize: selectedElement.style.fontSize,
+        fontFamily: selectedElement.style.fontFamily,
+        letterSpacing: selectedElement.style.letterSpacing
+      }));
+    }
   };
 
   const handleLetterSpacingChange = (spacing: string) => {
     if (!selectedElement) return;
     selectedElement.style.letterSpacing = spacing;
     onStyleChange({ letterSpacing: spacing });
+    // Persist letterSpacing for generic headings/subheadings
+    if (["h1","h2","h3","h4","h5","h6","p","span","div"].includes(selectedElement.tagName.toLowerCase())) {
+      let uniqueKey = '';
+      if (selectedElement.id) {
+        uniqueKey = `textStyle:${selectedElement.tagName.toLowerCase()}:${selectedElement.id}`;
+      } else {
+        let text = selectedElement.textContent || '';
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+          hash = ((hash << 5) - hash) + text.charCodeAt(i);
+          hash |= 0;
+        }
+        uniqueKey = `textStyle:${selectedElement.tagName.toLowerCase()}:hash${hash}`;
+      }
+      let styleObj = {};
+      try {
+        styleObj = JSON.parse(localStorage.getItem(uniqueKey) || '{}');
+      } catch {}
+      localStorage.setItem(uniqueKey, JSON.stringify({
+        ...styleObj,
+        letterSpacing: spacing,
+        fontWeight: selectedElement.style.fontWeight,
+        fontStyle: selectedElement.style.fontStyle,
+        textDecoration: selectedElement.style.textDecoration,
+        textAlign: selectedElement.style.textAlign,
+        fontSize: selectedElement.style.fontSize,
+        fontFamily: selectedElement.style.fontFamily,
+        lineHeight: selectedElement.style.lineHeight
+      }));
+    }
   };
 
   // Enhanced color picker colors
@@ -327,6 +387,26 @@ const EditModeControls: React.FC<EditModeControlsProps> = ({
         fontStyle: span.style.fontStyle,
         textDecoration: span.style.textDecoration
       });
+      // Persist bold, italic, underline for generic headings/subheadings
+      if (["h1","h2","h3","h4","h5","h6","p","span","div"].includes(selectedElement.tagName.toLowerCase())) {
+        let uniqueKey = '';
+        if (selectedElement.id) {
+          uniqueKey = `textStyle:${selectedElement.tagName.toLowerCase()}:${selectedElement.id}`;
+        } else {
+          let text = selectedElement.textContent || '';
+          let hash = 0;
+          for (let i = 0; i < text.length; i++) {
+            hash = ((hash << 5) - hash) + text.charCodeAt(i);
+            hash |= 0;
+          }
+          uniqueKey = `textStyle:${selectedElement.tagName.toLowerCase()}:hash${hash}`;
+        }
+        localStorage.setItem(uniqueKey, JSON.stringify({
+          fontWeight: span.style.fontWeight,
+          fontStyle: span.style.fontStyle,
+          textDecoration: span.style.textDecoration
+        }));
+      }
       return;
     }
 
@@ -380,6 +460,31 @@ const EditModeControls: React.FC<EditModeControlsProps> = ({
         }
         break;
     }
+    // Persist all styles for generic headings/subheadings (whole element case)
+    if (["h1","h2","h3","h4","h5","h6","p","span","div"].includes(selectedElement.tagName.toLowerCase())) {
+      let uniqueKey = '';
+      if (selectedElement.id) {
+        uniqueKey = `textStyle:${selectedElement.tagName.toLowerCase()}:${selectedElement.id}`;
+      } else {
+        let text = selectedElement.textContent || '';
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+          hash = ((hash << 5) - hash) + text.charCodeAt(i);
+          hash |= 0;
+        }
+        uniqueKey = `textStyle:${selectedElement.tagName.toLowerCase()}:hash${hash}`;
+      }
+      localStorage.setItem(uniqueKey, JSON.stringify({
+        fontWeight: selectedElement.style.fontWeight,
+        fontStyle: selectedElement.style.fontStyle,
+        textDecoration: selectedElement.style.textDecoration,
+        textAlign: selectedElement.style.textAlign,
+        fontSize: selectedElement.style.fontSize,
+        fontFamily: selectedElement.style.fontFamily,
+        lineHeight: selectedElement.style.lineHeight,
+        letterSpacing: selectedElement.style.letterSpacing
+      }));
+    }
     onStyleChange(newStyles);
   };
 
@@ -387,6 +492,35 @@ const EditModeControls: React.FC<EditModeControlsProps> = ({
     if (!selectedElement) return;
     selectedElement.style.fontSize = size;
     onStyleChange({ fontSize: size });
+    // Persist fontSize for generic headings/subheadings
+    if (["h1","h2","h3","h4","h5","h6","p","span","div"].includes(selectedElement.tagName.toLowerCase())) {
+      let uniqueKey = '';
+      if (selectedElement.id) {
+        uniqueKey = `textStyle:${selectedElement.tagName.toLowerCase()}:${selectedElement.id}`;
+      } else {
+        let text = selectedElement.textContent || '';
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+          hash = ((hash << 5) - hash) + text.charCodeAt(i);
+          hash |= 0;
+        }
+        uniqueKey = `textStyle:${selectedElement.tagName.toLowerCase()}:hash${hash}`;
+      }
+      // Merge with existing style object
+      let styleObj = {};
+      try {
+        styleObj = JSON.parse(localStorage.getItem(uniqueKey) || '{}');
+      } catch {}
+      localStorage.setItem(uniqueKey, JSON.stringify({
+        ...styleObj,
+        fontSize: size,
+        fontWeight: selectedElement.style.fontWeight,
+        fontStyle: selectedElement.style.fontStyle,
+        textDecoration: selectedElement.style.textDecoration,
+        textAlign: selectedElement.style.textAlign,
+        fontFamily: selectedElement.style.fontFamily
+      }));
+    }
   };
 
   const handleColorButtonMouseDown = () => {
@@ -397,42 +531,105 @@ const EditModeControls: React.FC<EditModeControlsProps> = ({
   };
 
   const handleColorPick = (color: string) => {
-    setCurrentColor(color);
     if (!selectedElement) return;
-
-    // Try to apply color to selected text if possible
-    const selection = window.getSelection();
-    if (colorButtonSelectionRef.current && selection) {
-      selection.removeAllRanges();
-      selection.addRange(colorButtonSelectionRef.current);
-    }
-    const range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
-    // Only allow styling if the selection is within a single text node
-    if (
-      selection &&
-      range &&
-      selectedElement.contains(range.commonAncestorContainer) &&
-      range.startContainer === range.endContainer &&
-      range.startContainer.nodeType === Node.TEXT_NODE &&
-      !selection.isCollapsed
-    ) {
-      // If text is selected, wrap and color only the selected text
-      const span = document.createElement('span');
-      span.style.color = color;
-      const fragment = range.extractContents();
-      span.appendChild(fragment);
-      range.insertNode(span);
-      // Preserve selection
-      selection.removeAllRanges();
-      const newRange = document.createRange();
-      newRange.selectNodeContents(span);
-      selection.addRange(newRange);
-      onStyleChange({}); // No need to update the whole element's color
-      return;
-    }
-    // Always apply color to the whole selected element if no text is selected
     selectedElement.style.color = color;
     onStyleChange({ color });
+    // Persist text color for generic headings/subheadings
+    const tagName = selectedElement.tagName.toLowerCase();
+    if (["h1","h2","h3","h4","h5","h6","p","span","div"].includes(tagName)) {
+      let uniqueKey = '';
+      if (selectedElement.id) {
+        uniqueKey = `textColor:${tagName}:${selectedElement.id}`;
+      } else {
+        // Use a hash of the text content for uniqueness if no id
+        let text = selectedElement.textContent || '';
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+          hash = ((hash << 5) - hash) + text.charCodeAt(i);
+          hash |= 0;
+        }
+        uniqueKey = `textColor:${tagName}:hash${hash}`;
+      }
+      localStorage.setItem(uniqueKey, color);
+    }
+    // Persist text color for InsightsPage buttons (move this to the top)
+    if (selectedElement.hasAttribute('data-insights-subscribe-btn')) {
+      localStorage.setItem('insightsSubscribeBtnTextColor', color);
+    } else if (selectedElement.hasAttribute('data-insights-btn')) {
+      const id = selectedElement.getAttribute('data-insights-btn');
+      if (id) {
+        localStorage.setItem('insightsBtnTextColor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-opportunities-btn')) {
+      const id = selectedElement.getAttribute('data-opportunities-btn');
+      if (id) {
+        localStorage.setItem('opportunitiesBtnTextColor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-event-id')) {
+      const id = selectedElement.getAttribute('data-event-id');
+      if (id) {
+        localStorage.setItem('homePageItemTextColor:event:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-events-btn')) {
+      const id = selectedElement.getAttribute('data-events-btn');
+      if (id) {
+        localStorage.setItem('eventsBtnTextColor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-learning-btn')) {
+      const id = selectedElement.getAttribute('data-learning-btn');
+      if (id) {
+        localStorage.setItem('learningBtnTextColor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-mentorship-btn')) {
+      const id = selectedElement.getAttribute('data-mentorship-btn');
+      if (id) {
+        localStorage.setItem('mentorshipBtnTextColor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-course-id')) {
+      const id = selectedElement.getAttribute('data-course-id');
+      if (id) {
+        localStorage.setItem('homePageItemTextColor:course:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-mentor-id')) {
+      const id = selectedElement.getAttribute('data-mentor-id');
+      if (id) {
+        localStorage.setItem('homePageItemTextColor:mentor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-opportunity-id')) {
+      const id = selectedElement.getAttribute('data-opportunity-id');
+      if (id) {
+        localStorage.setItem('homePageItemTextColor:opportunity:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-article-id')) {
+      const id = selectedElement.getAttribute('data-article-id');
+      if (id) {
+        localStorage.setItem('homePageItemTextColor:article:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-leader-id')) {
+      const id = selectedElement.getAttribute('data-leader-id');
+      if (id) {
+        localStorage.setItem('leaderboardItemTextColor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-hero-btn')) {
+      localStorage.setItem('heroBtnTextColor', color);
+    } else if (selectedElement.hasAttribute('data-nav-btn')) {
+      const path = selectedElement.getAttribute('data-nav-btn');
+      if (path) {
+        localStorage.setItem('navBtnTextColor:' + path, color);
+      }
+    } else if (selectedElement.hasAttribute('data-footer-link-id')) {
+      const id = selectedElement.getAttribute('data-footer-link-id');
+      if (id) {
+        localStorage.setItem('footerItemTextColor:' + id, color);
+      }
+    }
+    // Persist text color for CareersPage job Apply Now buttons
+    if (selectedElement.hasAttribute('data-careers-job-btn')) {
+      const id = selectedElement.getAttribute('data-careers-job-btn');
+      if (id) {
+        localStorage.setItem('careersPageJobBtnTextColor:' + id, color);
+      }
+    }
   };
 
   // Add click-away handler for color picker
@@ -453,6 +650,124 @@ const EditModeControls: React.FC<EditModeControlsProps> = ({
     selectedElement.style.backgroundColor = color;
     onStyleChange({ backgroundColor: color });
     setShowColorPicker(false);
+    // Persist nav background color if editing nav
+    if (selectedElement.tagName.toLowerCase() === 'nav') {
+      localStorage.setItem('navBgColor', color);
+    }
+    // Persist footer background color if editing footer
+    if (selectedElement.tagName.toLowerCase() === 'footer') {
+      localStorage.setItem('footerBgColor', color);
+    }
+    // Persist background color for footer list items (links) if they have data-footer-link-id
+    if (selectedElement.hasAttribute('data-footer-link-id')) {
+      const id = selectedElement.getAttribute('data-footer-link-id');
+      if (id) {
+        localStorage.setItem('footerItemBgColor:' + id, color);
+      }
+    }
+    // Persist background color for HomePage sections if they have data-home-section-id
+    if (selectedElement.hasAttribute('data-home-section-id')) {
+      const id = selectedElement.getAttribute('data-home-section-id');
+      if (id) {
+        localStorage.setItem('homeSectionBgColor:' + id, color);
+      }
+    }
+    // Persist background color for mentorship feature cards
+    if (selectedElement.hasAttribute('data-mentorship-feature-id')) {
+      const id = selectedElement.getAttribute('data-mentorship-feature-id');
+      if (id) {
+        localStorage.setItem('mentorshipFeatureBgColor:' + id, color);
+      }
+    }
+    // Persist background color for mentorship program overview section
+    if (selectedElement.hasAttribute('data-mentorship-section-id')) {
+      const id = selectedElement.getAttribute('data-mentorship-section-id');
+      if (id) {
+        localStorage.setItem('mentorshipSectionBgColor:' + id, color);
+      }
+    }
+    // Persist background color for insights category cards
+    if (selectedElement.hasAttribute('data-insights-category-id')) {
+      const id = selectedElement.getAttribute('data-insights-category-id');
+      if (id) {
+        localStorage.setItem('insightsCategoryBgColor:' + id, color);
+      }
+    }
+    // Persist background color for insights newsletter section
+    if (selectedElement.hasAttribute('data-insights-section-id')) {
+      const id = selectedElement.getAttribute('data-insights-section-id');
+      if (id) {
+        localStorage.setItem('insightsSectionBgColor:' + id, color);
+      }
+    }
+    // Persist background color for HeroBanner Get Started button
+    if (selectedElement.hasAttribute('data-hero-btn')) {
+      localStorage.setItem('heroBtnBgColor', color);
+    }
+    // Persist background color for Navigation buttons
+    if (selectedElement.hasAttribute('data-nav-btn')) {
+      const path = selectedElement.getAttribute('data-nav-btn');
+      if (path) {
+        localStorage.setItem('navBtnBgColor:' + path, color);
+      }
+    }
+    // Persist background color for EventsPage buttons
+    if (selectedElement.hasAttribute('data-events-btn')) {
+      const id = selectedElement.getAttribute('data-events-btn');
+      if (id) {
+        localStorage.setItem('eventsBtnBgColor:' + id, color);
+      }
+    }
+    // Persist background color for LearningPage buttons
+    if (selectedElement.hasAttribute('data-learning-btn')) {
+      const id = selectedElement.getAttribute('data-learning-btn');
+      if (id) {
+        localStorage.setItem('learningBtnBgColor:' + id, color);
+      }
+    }
+    // Persist background color for MentorshipPage buttons
+    if (selectedElement.hasAttribute('data-mentorship-btn')) {
+      const id = selectedElement.getAttribute('data-mentorship-btn');
+      if (id) {
+        localStorage.setItem('mentorshipBtnBgColor:' + id, color);
+      }
+    }
+    // Persist background color for OpportunitiesPage buttons
+    if (selectedElement.hasAttribute('data-opportunities-btn')) {
+      const id = selectedElement.getAttribute('data-opportunities-btn');
+      if (id) {
+        localStorage.setItem('opportunitiesBtnBgColor:' + id, color);
+      }
+    }
+    // Persist background color for InsightsPage buttons
+    if (selectedElement.hasAttribute('data-insights-btn')) {
+      const id = selectedElement.getAttribute('data-insights-btn');
+      if (id) {
+        localStorage.setItem('insightsBtnBgColor:' + id, color);
+      }
+    }
+    // Persist background color for InsightsPage Subscribe button
+    if (selectedElement.hasAttribute('data-insights-subscribe-btn')) {
+      localStorage.setItem('insightsSubscribeBtnBgColor', color);
+    }
+    // Persist background color for CareersPage main background section
+    if (selectedElement.hasAttribute('data-careers-main-bg')) {
+      localStorage.setItem('careersPageMainBgColor', color);
+    }
+    // Persist background color for CareersPage job cards
+    if (selectedElement.hasAttribute('data-careers-job-card')) {
+      const id = selectedElement.getAttribute('data-careers-job-card');
+      if (id) {
+        localStorage.setItem('careersPageJobCardBgColor:' + id, color);
+      }
+    }
+    // Persist background color for CareersPage job Apply Now buttons
+    if (selectedElement.hasAttribute('data-careers-job-btn')) {
+      const id = selectedElement.getAttribute('data-careers-job-btn');
+      if (id) {
+        localStorage.setItem('careersPageJobBtnBgColor:' + id, color);
+      }
+    }
   };
 
   const handleHoverColorChange = (color: string) => {
@@ -461,6 +776,192 @@ const EditModeControls: React.FC<EditModeControlsProps> = ({
     selectedElement.classList.add('custom-hover');
     onStyleChange({ '--hover-color': color });
     setShowColorPicker(false);
+    // Persist hover color for HomePage buttons
+    if (selectedElement.hasAttribute('data-event-id')) {
+      const id = selectedElement.getAttribute('data-event-id');
+      if (id) {
+        localStorage.setItem('homePageItemHoverColor:event:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-course-id')) {
+      const id = selectedElement.getAttribute('data-course-id');
+      if (id) {
+        localStorage.setItem('homePageItemHoverColor:course:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-mentor-id')) {
+      const id = selectedElement.getAttribute('data-mentor-id');
+      if (id) {
+        localStorage.setItem('homePageItemHoverColor:mentor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-opportunity-id')) {
+      const id = selectedElement.getAttribute('data-opportunity-id');
+      if (id) {
+        localStorage.setItem('homePageItemHoverColor:opportunity:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-article-id')) {
+      const id = selectedElement.getAttribute('data-article-id');
+      if (id) {
+        localStorage.setItem('homePageItemHoverColor:article:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-leader-id')) {
+      const id = selectedElement.getAttribute('data-leader-id');
+      if (id) {
+        localStorage.setItem('leaderboardItemHoverColor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-hero-btn')) {
+      localStorage.setItem('heroBtnHoverColor', color);
+    } else if (selectedElement.hasAttribute('data-nav-btn')) {
+      const path = selectedElement.getAttribute('data-nav-btn');
+      if (path) {
+        localStorage.setItem('navBtnHoverColor:' + path, color);
+      }
+    } else if (selectedElement.hasAttribute('data-footer-link-id')) {
+      const id = selectedElement.getAttribute('data-footer-link-id');
+      if (id) {
+        localStorage.setItem('footerItemHoverColor:' + id, color);
+      }
+    }
+    // Persist hover color for EventsPage buttons
+    if (selectedElement.hasAttribute('data-events-btn')) {
+      const id = selectedElement.getAttribute('data-events-btn');
+      if (id) {
+        localStorage.setItem('eventsBtnHoverColor:' + id, color);
+      }
+    }
+    // Persist hover color for LearningPage buttons
+    if (selectedElement.hasAttribute('data-learning-btn')) {
+      const id = selectedElement.getAttribute('data-learning-btn');
+      if (id) {
+        localStorage.setItem('learningBtnHoverColor:' + id, color);
+      }
+    }
+    // Persist hover color for MentorshipPage buttons
+    if (selectedElement.hasAttribute('data-mentorship-btn')) {
+      const id = selectedElement.getAttribute('data-mentorship-btn');
+      if (id) {
+        localStorage.setItem('mentorshipBtnHoverColor:' + id, color);
+      }
+    }
+    // Persist hover color for OpportunitiesPage buttons
+    if (selectedElement.hasAttribute('data-opportunities-btn')) {
+      const id = selectedElement.getAttribute('data-opportunities-btn');
+      if (id) {
+        localStorage.setItem('opportunitiesBtnHoverColor:' + id, color);
+      }
+    }
+    // Persist hover color for InsightsPage buttons
+    if (selectedElement.hasAttribute('data-insights-btn')) {
+      const id = selectedElement.getAttribute('data-insights-btn');
+      if (id) {
+        localStorage.setItem('insightsBtnHoverColor:' + id, color);
+      }
+    }
+    // Persist hover color for InsightsPage Subscribe button
+    if (selectedElement.hasAttribute('data-insights-subscribe-btn')) {
+      localStorage.setItem('insightsSubscribeBtnHoverColor', color);
+    }
+    // Persist hover background color for CareersPage job Apply Now buttons
+    if (selectedElement.hasAttribute('data-careers-job-btn')) {
+      const id = selectedElement.getAttribute('data-careers-job-btn');
+      if (id) {
+        localStorage.setItem('careersPageJobBtnHoverColor:' + id, color);
+      }
+    }
+  };
+
+  const handleHoverTextColorChange = (color: string) => {
+    if (!selectedElement) return;
+    selectedElement.style.setProperty('--hover-text-color', color);
+    onStyleChange({ '--hover-text-color': color });
+    // Persist hover text color for HomePage, Leaderboard, HeroBanner Get Started button, Navigation buttons, and Footer buttons
+    if (selectedElement.hasAttribute('data-event-id')) {
+      const id = selectedElement.getAttribute('data-event-id');
+      if (id) {
+        localStorage.setItem('homePageItemHoverTextColor:event:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-course-id')) {
+      const id = selectedElement.getAttribute('data-course-id');
+      if (id) {
+        localStorage.setItem('homePageItemHoverTextColor:course:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-mentor-id')) {
+      const id = selectedElement.getAttribute('data-mentor-id');
+      if (id) {
+        localStorage.setItem('homePageItemHoverTextColor:mentor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-opportunity-id')) {
+      const id = selectedElement.getAttribute('data-opportunity-id');
+      if (id) {
+        localStorage.setItem('homePageItemHoverTextColor:opportunity:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-article-id')) {
+      const id = selectedElement.getAttribute('data-article-id');
+      if (id) {
+        localStorage.setItem('homePageItemHoverTextColor:article:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-leader-id')) {
+      const id = selectedElement.getAttribute('data-leader-id');
+      if (id) {
+        localStorage.setItem('leaderboardItemHoverTextColor:' + id, color);
+      }
+    } else if (selectedElement.hasAttribute('data-hero-btn')) {
+      localStorage.setItem('heroBtnHoverTextColor', color);
+    } else if (selectedElement.hasAttribute('data-nav-btn')) {
+      const path = selectedElement.getAttribute('data-nav-btn');
+      if (path) {
+        localStorage.setItem('navBtnHoverTextColor:' + path, color);
+      }
+    } else if (selectedElement.hasAttribute('data-footer-link-id')) {
+      const id = selectedElement.getAttribute('data-footer-link-id');
+      if (id) {
+        localStorage.setItem('footerItemHoverTextColor:' + id, color);
+      }
+    }
+    // Persist hover text color for EventsPage buttons
+    if (selectedElement.hasAttribute('data-events-btn')) {
+      const id = selectedElement.getAttribute('data-events-btn');
+      if (id) {
+        localStorage.setItem('eventsBtnHoverTextColor:' + id, color);
+      }
+    }
+    // Persist hover text color for LearningPage buttons
+    if (selectedElement.hasAttribute('data-learning-btn')) {
+      const id = selectedElement.getAttribute('data-learning-btn');
+      if (id) {
+        localStorage.setItem('learningBtnHoverTextColor:' + id, color);
+      }
+    }
+    // Persist hover text color for MentorshipPage buttons
+    if (selectedElement.hasAttribute('data-mentorship-btn')) {
+      const id = selectedElement.getAttribute('data-mentorship-btn');
+      if (id) {
+        localStorage.setItem('mentorshipBtnHoverTextColor:' + id, color);
+      }
+    }
+    // Persist hover text color for OpportunitiesPage buttons
+    if (selectedElement.hasAttribute('data-opportunities-btn')) {
+      const id = selectedElement.getAttribute('data-opportunities-btn');
+      if (id) {
+        localStorage.setItem('opportunitiesBtnHoverTextColor:' + id, color);
+      }
+    }
+    // Persist hover text color for InsightsPage buttons
+    if (selectedElement.hasAttribute('data-insights-btn')) {
+      const id = selectedElement.getAttribute('data-insights-btn');
+      if (id) {
+        localStorage.setItem('insightsBtnHoverTextColor:' + id, color);
+      }
+    }
+    // Persist hover text color for InsightsPage Subscribe button
+    if (selectedElement.hasAttribute('data-insights-subscribe-btn')) {
+      localStorage.setItem('insightsSubscribeBtnHoverTextColor', color);
+    }
+    // Persist hover text color for CareersPage job Apply Now buttons
+    if (selectedElement.hasAttribute('data-careers-job-btn')) {
+      const id = selectedElement.getAttribute('data-careers-job-btn');
+      if (id) {
+        localStorage.setItem('careersPageJobBtnHoverTextColor:' + id, color);
+      }
+    }
   };
 
   const handleLayoutChange = (property: any, value: string) => {
@@ -494,39 +995,39 @@ const EditModeControls: React.FC<EditModeControlsProps> = ({
     }
   };
 
-  // Add the downloadZip function
-  const downloadZip = () => {
-    const zip = new JSZip();
-    // Demo: Add static HTML, CSS, and JS files. Replace with your actual build output if needed.
-    zip.file('index.html', `<!DOCTYPE html>
-<html lang='en'>
-<head>
-  <meta charset='UTF-8'>
-  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-  <title>Offline Demo Site</title>
-  <link rel='stylesheet' href='style.css'>
-</head>
-<body>
-  <header>
-    <h1>Welcome to the Offline Demo Site</h1>
-    <button id='demoBtn'>Click Me</button>
-  </header>
-  <main>
-    <p>This is a static export. You can open this ZIP and run index.html offline.</p>
-  </main>
-  <script src='main.js'></script>
-</body>
-</html>`);
-    zip.file('style.css', `body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; }
-header { background: #1783b0; color: #fff; padding: 2rem; text-align: center; }
-button { background: #fff; color: #1783b0; border: 2px solid #1783b0; padding: 0.5rem 1rem; border-radius: 6px; font-size: 1rem; cursor: pointer; }
-button:hover { background: #1783b0; color: #fff; }
-main { padding: 2rem; text-align: center; }`);
-    zip.file('main.js', `document.getElementById('demoBtn').addEventListener('click', function() { alert('Button works offline!'); });`);
-    zip.generateAsync({ type: 'blob' }).then(blob => {
-      saveAs(blob, 'demo-site.zip');
+  // Add the exportUserChanges function
+  function exportUserChanges() {
+    // List all relevant localStorage keys for all pages and features
+    const keys = [
+      // HomePage
+      'homePageContent', 'homePageImageDimensions',
+      // EventsPage
+      'eventPageEvents', 'eventPageImageDimensions',
+      // LearningPage
+      'learningPageCourses', 'learningPageImageDimensions',
+      // MentorshipPage
+      'mentorshipPageMentors', 'mentorshipPageImageDimensions',
+      // OpportunitiesPage
+      'opportunitiesPageOpportunities', 'opportunitiesPageImageDimensions',
+      // InsightsPage
+      'insightsPageArticles', 'insightsPageImageDimensions',
+      // Add any other keys you persist (e.g., nav/footer styles, hero, etc.)
+    ];
+
+    // Collect all key-value pairs
+    const userChanges: Record<string, any> = {};
+    keys.forEach(key => {
+      const value = localStorage.getItem(key);
+      if (value) userChanges[key] = JSON.parse(value);
     });
-  };
+
+    // Download as JSON
+    const blob = new Blob([JSON.stringify(userChanges, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'user-changes.json';
+    a.click();
+  }
 
   // Add section-specific reset handlers
   const resetTypography = () => {
@@ -1041,6 +1542,16 @@ main { padding: 2rem; text-align: center; }`);
                   onChange={(e) => handleHoverColorChange(e.target.value)}
                   className="w-10 h-10 p-0 border-none bg-transparent cursor-pointer"
                 />
+                {/* Hover Text Color Picker: always show for all elements */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium">Hover Text Color</label>
+                  <input
+                    type="color"
+                    value={selectedElement?.style.getPropertyValue('--hover-text-color') || '#86bc25'}
+                    onChange={e => handleHoverTextColorChange(e.target.value)}
+                    className="w-10 h-10 p-0 border-none bg-transparent cursor-pointer"
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -1079,10 +1590,10 @@ main { padding: 2rem; text-align: center; }`);
 
       <div className="mt-6">
         <button
-          onClick={downloadZip}
-          className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold mt-4"
+          onClick={exportUserChanges}
+          className="w-full p-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold mt-4"
         >
-          Download Demo Site ZIP
+          Export User Changes (JSON)
         </button>
       </div>
     </div>

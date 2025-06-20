@@ -2,12 +2,32 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/commons/2/2b/DeloitteNewSmall.png" />
+    <link id="dynamic-favicon" rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/commons/2/2b/DeloitteNewSmall.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Deloitte Community</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Favicon persistence logic
+      (function() {
+        const savedFavicon = localStorage.getItem('customFavicon');
+        if (savedFavicon) {
+          var favicon = document.getElementById('dynamic-favicon');
+          if (favicon) {
+            favicon.href = savedFavicon;
+          }
+        }
+        // Expose a method to update the favicon
+        window.setCustomFavicon = function(url) {
+          var favicon = document.getElementById('dynamic-favicon');
+          if (favicon) {
+            favicon.href = url;
+            localStorage.setItem('customFavicon', url);
+          }
+        };
+      })();
+    </script>
   </body>
 </html>
